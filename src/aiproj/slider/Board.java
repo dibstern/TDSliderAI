@@ -41,7 +41,7 @@ public class Board {
      */
     public int[] countMoves(String cell_type, Boolean both) {
 
-        /* Initialise legalMovecount in the form {H, V} where H is the
+        /* Initialise legalMoveCount in the form {H, V} where H is the
          * number of legal moves for player H and V is the number of
          * legal moves for player V */
         int[] legalMoveCount = {0, 0};
