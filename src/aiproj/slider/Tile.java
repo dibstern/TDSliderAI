@@ -50,5 +50,12 @@ public class Tile {
         newPos[1] = this.col;
         return newPos;
     }
+    public void setCellType(String type) {
+        this.cellType = type;
+    }
+
+    public String getCellType(String type) {
+        return this.cellType;
+    }
 
 }

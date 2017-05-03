@@ -228,4 +228,8 @@ public class Board {
         v_tiles.add(newTile);
     }
 
+    public Tile getTile(int i, int j) {
+        return tiles[i][j];
+    }
+
 }

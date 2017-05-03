@@ -45,12 +45,12 @@ public class DopePlayer implements SliderPlayer {
         curr_board = readBoard(dimension, board);
 
         // Reading in the number of legal moves
-        int[] legalMoves = curr_board.countMoves(playerType, true);
-        legalMoveCountPlayer = ourPlayer.equals(Tile.PLAYER_H) ? legalMoves[0] : legalMoves[1];
-        legalMoveCountOpponent = Opponent.equals(Tile.PLAYER_H) ? legalMoves[0] : legalMoves[1];
+        //int[] legalMoves = curr_board.countMoves(playerType, true);
+        //legalMoveCountPlayer = ourPlayer.equals(Tile.PLAYER_H) ? legalMoves[0] : legalMoves[1];
+        //legalMoveCountOpponent = Opponent.equals(Tile.PLAYER_H) ? legalMoves[0] : legalMoves[1];
 
-        movesPlayer = curr_board.getAllMoves(ourPlayer);
-        movesOpponent = curr_board.getAllMoves(Opponent);
+        refresh();
+
 
     }
 
@@ -67,8 +67,46 @@ public class DopePlayer implements SliderPlayer {
      */
     public void update(Move move) {
 
+    if (move == null) {
+        return;
     }
 
+    Tile fromTile = curr_board.getTile(move.j, move.i);
+    int toI = move.i;
+    int toJ = move.j;
+    String cellType = fromTile.getCellType();
+
+    Tile toTile;
+
+    if (move.d == Move.Direction.LEFT) {
+        toI -= 1;
+    }
+    if (move.d == Move.Direction.RIGHT) {
+        toI += 1;
+    }
+    if (move.d == Move.Direction.UP) {
+        toJ -= 1;
+    }
+    if (move.d == Move.Direction.DOWN) {
+        toJ += 1;
+    }
+
+    toTile = curr_board.getTile(toI,toJ);
+
+    fromTile.setCellType(Tile.EMPTY);
+
+    toTile.setCellType(cellType);
+
+
+    }
+
+    /**
+     * Refreshes variables about the board given its state
+     */
+    private void refresh() {
+        movesPlayer = curr_board.getAllMoves(ourPlayer);
+        movesOpponent = curr_board.getAllMoves(Opponent);
+    }
 
 
     /**
