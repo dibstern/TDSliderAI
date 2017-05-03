@@ -16,6 +16,8 @@ public class DopePlayer implements SliderPlayer {
     private String Opponent;
     private int legalMoveCountPlayer;
     private int legalMoveCountOpponent;
+    private ArrayList<Move> movesPlayer;
+    private ArrayList<Move> movesOpponent;
     private ArrayList<Move> CandidateMoves;
 
     // Add more info to track here, for the Evaluation function
@@ -44,6 +46,9 @@ public class DopePlayer implements SliderPlayer {
         int[] legalMoves = curr_board.countMoves(playerType, true);
         legalMoveCountPlayer = ourPlayer.equals(Tile.PLAYER_H) ? legalMoves[0] : legalMoves[1];
         legalMoveCountOpponent = Opponent.equals(Tile.PLAYER_H) ? legalMoves[0] : legalMoves[1];
+
+        movesPlayer = curr_board.getAllMoves(ourPlayer);
+        movesOpponent = curr_board.getAllMoves(Opponent);
 
     }
 
@@ -103,6 +108,14 @@ public class DopePlayer implements SliderPlayer {
     /* Getter Method for legalMoveCountOpponent */
     public int getLegalMoveCountOpponent() {
         return legalMoveCountOpponent;
+    }
+
+    /* Getter Method for legalMoveCountPlayer */
+    public ArrayList<Move> getMovesPlayer() { return movesPlayer; }
+
+    /* Getter Method for legalMoveCountPlayer */
+    public ArrayList<Move> getMovesOpponent() {
+        return movesOpponent;
     }
 
     /* Getter Method for ourPlayer */
