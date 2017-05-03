@@ -4,16 +4,21 @@ import aiproj.slider.Tile;
 import aiproj.slider.Board;
 import aiproj.slider.Input;
 import java.lang.Character;
-
+import java.util.ArrayList;
 import static aiproj.slider.Input.*;
 
 
 public class DopePlayer implements SliderPlayer {
+
+    // Keeping Track of the Board, Player Piece Types, Number of current legal moves
     private Board curr_board;
     private String ourPlayer;
     private String Opponent;
-    private int legalMovesPlayer;
-    private int legalMovesOpponent;
+    private int legalMoveCountPlayer;
+    private int legalMoveCountOpponent;
+    private ArrayList<Move> CandidateMoves;
+
+    // Add more info to track here, for the Evaluation function
 
 
     /**
@@ -26,20 +31,19 @@ public class DopePlayer implements SliderPlayer {
      * control for this game ('H' = Horizontal, 'V' = Vertical)
      */
     public void init(int dimension, String board, char player) {
+
+        // Assigning Player Pieces
         String playerType = Character.toString(player);
-        curr_board = readBoard(dimension, board);
         ourPlayer = playerType;
-        Opponent = playerType.equals(Tile.PLAYER_H) ? Tile.PLAYER_H : Tile.PLAYER_V;
+        Opponent = playerType.equals(Tile.PLAYER_H) ? Tile.PLAYER_V : Tile.PLAYER_H;
+
+        // Reading in the Board
+        curr_board = readBoard(dimension, board);
+
+        // Reading in the number of legal moves
         int[] legalMoves = curr_board.countMoves(playerType, true);
-        legalMovesPlayer = ourPlayer.equals(Tile.PLAYER_H) ? legalMoves[0] : legalMoves[1];
-        legalMovesOpponent = Opponent.equals(Tile.PLAYER_H) ? legalMoves[0] : legalMoves[1];
-
-        // Tests the legalMoves function
-        /* Output each count of legal moves as described by Project Spec */
-        System.out.println(legalMoves[0]);
-        System.out.println(legalMoves[1]);
-
-
+        legalMoveCountPlayer = ourPlayer.equals(Tile.PLAYER_H) ? legalMoves[0] : legalMoves[1];
+        legalMoveCountOpponent = Opponent.equals(Tile.PLAYER_H) ? legalMoves[0] : legalMoves[1];
 
     }
 
@@ -78,6 +82,11 @@ public class DopePlayer implements SliderPlayer {
      */
     public Move move() {
         Move mymove = new Move(1, 1, Move.Direction.DOWN);
+
+
+        // Clear Candidate Moves at the End of the Turn --> Implement a system that keeps them but removes invalidated
+        // Candidate Moves based on our selected move() and update()?
+        CandidateMoves.clear();
         return mymove;
     }
 
@@ -86,5 +95,29 @@ public class DopePlayer implements SliderPlayer {
         return curr_board;
     }
 
+    /* Getter Method for legalMoveCountPlayer */
+    public int getLegalMoveCountPlayer() {
+        return legalMoveCountPlayer;
+    }
+
+    /* Getter Method for legalMoveCountOpponent */
+    public int getLegalMoveCountOpponent() {
+        return legalMoveCountOpponent;
+    }
+
+    /* Getter Method for ourPlayer */
+    public String getOurPlayer() {
+        return ourPlayer;
+    }
+
+    /* Getter Method for Opponent */
+    public String getOpponent() {
+        return Opponent;
+    }
+
+    /* Mutator Method for CandidateMoves */
+    public void addMove(Move move) {
+        CandidateMoves.add(move);
+    }
 
 }

@@ -11,6 +11,7 @@
 package aiproj.slider;
 
 import aiproj.slider.DopePlayer;
+// new comment lel
 
 public final class Tester {
     public static void main(String[] args) {
@@ -24,11 +25,9 @@ public final class Tester {
         newgame.init(n, testboard, testCellType);
         newgame.getBoard().boardDisplay();
 
+        // Tests the legalMoves function and player piece assignment
+        System.out.println(newgame.getOurPlayer() + " has " + newgame.getLegalMoveCountPlayer() + " possible moves.");
+        System.out.println(newgame.getOpponent() + " has " + newgame.getLegalMoveCountOpponent() + " possible moves.");
 
-
-        /* Output each count of legal moves as described by Project Spec */
-        //System.out.println(newgame.legalMovesPlayer);
-        //System.out.println(newgame.legalMovesOpponent);
     }
-
 }
