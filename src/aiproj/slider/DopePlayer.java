@@ -5,6 +5,8 @@ import aiproj.slider.Board;
 import aiproj.slider.Input;
 import java.lang.Character;
 import java.util.ArrayList;
+import java.util.List;
+
 import static aiproj.slider.Input.*;
 
 
@@ -86,9 +88,10 @@ public class DopePlayer implements SliderPlayer {
      * at this point of the game, or null if there are no legal moves.
      */
     public Move move() {
-        Move mymove = new Move(1, 1, Move.Direction.DOWN);
-
-
+        if (movesPlayer.isEmpty()) {
+            return null;
+        }
+        Move mymove = movesPlayer.get(0);
         // Clear Candidate Moves at the End of the Turn --> Implement a system that keeps them but removes invalidated
         // Candidate Moves based on our selected move() and update()?
         CandidateMoves.clear();
