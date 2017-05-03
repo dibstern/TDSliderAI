@@ -49,13 +49,13 @@ public class Board {
 
         // MAKE THIS NICER
 
-        // if we're looking for h_tiles or both types, update our legal move count
+        // If we're looking for h_tiles or both types, update our legal move count
         if (cell_type.equals(Tile.PLAYER_H) || both) {
             for (Tile eachtile : h_tiles) {
                 legalMoveCount = tileMoves(eachtile, legalMoveCount);
             }
         }
-        // For each v_tile, update our legal move count
+        // If we're looking for v_tiles or both types, update our legal move count
         if (cell_type.equals(Tile.PLAYER_V) || both) {
             for (Tile eachtile : v_tiles) {
                 legalMoveCount = tileMoves(eachtile, legalMoveCount);

@@ -44,7 +44,6 @@ public class DopePlayer implements SliderPlayer {
         int[] legalMoves = curr_board.countMoves(playerType, true);
         legalMoveCountPlayer = ourPlayer.equals(Tile.PLAYER_H) ? legalMoves[0] : legalMoves[1];
         legalMoveCountOpponent = Opponent.equals(Tile.PLAYER_H) ? legalMoves[0] : legalMoves[1];
-
     }
 
 
