@@ -97,6 +97,8 @@ public class DopePlayer implements SliderPlayer {
 
     toTile.setCellType(cellType);
 
+    refresh();
+
 
     }
 
