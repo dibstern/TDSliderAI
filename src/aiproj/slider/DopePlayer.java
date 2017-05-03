@@ -20,7 +20,6 @@ public class DopePlayer implements SliderPlayer {
     private int legalMoveCountOpponent;
     private ArrayList<Move> movesPlayer;
     private ArrayList<Move> movesOpponent;
-    private ArrayList<Move> CandidateMoves;
 
     // Add more info to track here, for the Evaluation function
 
@@ -131,11 +130,8 @@ public class DopePlayer implements SliderPlayer {
         if (movesPlayer.isEmpty()) {
             return null;
         }
-        Move mymove = movesPlayer.get(0);
-        // Clear Candidate Moves at the End of the Turn --> Implement a system that keeps them but removes invalidated
-        // Candidate Moves based on our selected move() and update()?
-        CandidateMoves.clear();
-        return mymove;
+        System.out.println(ourPlayer + " " + movesPlayer.get(0));
+        return movesPlayer.get(0);
     }
 
     /* Getter Method for Board */
@@ -169,11 +165,6 @@ public class DopePlayer implements SliderPlayer {
     /* Getter Method for Opponent */
     public String getOpponent() {
         return Opponent;
-    }
-
-    /* Mutator Method for CandidateMoves */
-    public void addMove(Move move) {
-        CandidateMoves.add(move);
     }
 
 }

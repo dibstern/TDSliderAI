@@ -46,6 +46,7 @@ public class Board {
         }
 
         for (Tile tile : playerTiles) {
+            System.out.println(tile.getCol() + " " + tile.getRow());
             moves.addAll(getTileMoves(tile));
         }
 
@@ -98,11 +99,10 @@ public class Board {
     private ArrayList<Move> getTileMoves(Tile theTile) {
         ArrayList<Move> moves = new ArrayList<Move>();
 
-        int[] pos = theTile.getPos();
         String piece = theTile.getCellType();
 
-        int j = pos[0];
-        int i = pos[1];
+        int j = theTile.getRow();
+        int i = theTile.getCol();
 
         // Tile Up a valid move if Player V in the top row (j == 0) or it's empty
         if (j > 0 || piece.equals(Tile.PLAYER_V)) {

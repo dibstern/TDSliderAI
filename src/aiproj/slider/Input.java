@@ -17,20 +17,6 @@ import java.util.Scanner;
 
 public final class Input {
 
-    private static Input reference = null;
-    private Scanner in;
-
-    private Input(String strInput) {
-        in = new Scanner(strInput);
-    }
-
-    public static Scanner getScanner(String strInput) {
-        if (reference == null) {
-            reference = new Input(strInput);
-        }
-        return reference.in;
-    }
-
     /**
      * SWAPPED i AND j TO REFLECT CHANGE IN PART B
      * Reads the board from input
@@ -40,14 +26,15 @@ public final class Input {
     public static Board readBoard(int N, String strInput) {
 
         // Use string input instead of System input
-        Scanner read = getScanner(strInput);
+        Scanner read = new Scanner(strInput);
 
         Board board = new Board(N);
         for (int j = 0; j < N; j++) {
             for (int i = 0; i < N; i++) {
 
                 // Create tile and add to board
-                Tile new_tile = new Tile(read.next(), j, i);
+                String readtype = read.next();
+                Tile new_tile = new Tile(readtype, j, i);
                 board.getTiles()[j][i] = new_tile;
 
                 // If it's a player tile then add to appropriate list
