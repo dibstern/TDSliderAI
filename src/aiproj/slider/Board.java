@@ -30,6 +30,28 @@ public class Board {
         length = N;
     }
 
+    public ArrayList<Move> getAllMoves(String cell_type) {
+        ArrayList<Move> moves = new ArrayList<Move>();
+        ArrayList<Tile> playerTiles;
+
+        if (cell_type.equals(Tile.PLAYER_H)) {
+            playerTiles = h_tiles;
+        }
+        else if (cell_type.equals(Tile.PLAYER_V)) {
+            playerTiles = v_tiles;
+        }
+        else {
+            System.out.println("ERROR: Incorrect Tile Type");
+            return null;
+        }
+
+        for (Tile tile : playerTiles) {
+            moves.addAll(getTileMoves(tile));
+        }
+
+        return moves;
+    }
+
     // Add Type as an argument so we can loop through one list only, if required?
     /**
      * SWAPPED i AND j TO REFLECT CHANGE IN PART B
@@ -53,16 +75,65 @@ public class Board {
         if (cell_type.equals(Tile.PLAYER_H) || both) {
             for (Tile eachtile : h_tiles) {
                 legalMoveCount = tileMoves(eachtile, legalMoveCount);
+                getTileMoves(eachtile);
             }
         }
         // If we're looking for v_tiles or both types, update our legal move count
         if (cell_type.equals(Tile.PLAYER_V) || both) {
             for (Tile eachtile : v_tiles) {
                 legalMoveCount = tileMoves(eachtile, legalMoveCount);
+                getTileMoves(eachtile);
+
             }
         }
 
         return legalMoveCount;
+    }
+
+    /** Returns an arraylist all the moves available to the given player tile
+     *
+     * @param theTile current tile
+     * @return arraylist of moves
+     */
+    private ArrayList<Move> getTileMoves(Tile theTile) {
+        ArrayList<Move> moves = new ArrayList<Move>();
+
+        int[] pos = theTile.getPos();
+        String piece = theTile.getCellType();
+
+        int j = pos[0];
+        int i = pos[1];
+
+        // Tile Up a valid move if Player V in the top row (j == 0) or it's empty
+        if (j > 0 || piece.equals(Tile.PLAYER_V)) {
+            if (j==0 || tiles[j-1][i].isEmpty()) {
+                moves.add(new Move(i,j,Move.Direction.UP));
+            }
+        }
+        // Tile Right a valid move if Player H in the rightmost column or if it's empty
+        if (i < length-1 || piece.equals(Tile.PLAYER_H)) {
+            if (i==length-1 || tiles[j][i+1].isEmpty()) {
+                moves.add(new Move(i,j,Move.Direction.RIGHT));
+            }
+        }
+        // Tile Left a valid move? Player H can't move left
+        if (i > 0 && !piece.equals(Tile.PLAYER_H)) {
+            if (tiles[j][i-1].isEmpty()) {
+                moves.add(new Move(i,j,Move.Direction.LEFT));
+            }
+        }
+        // Tile Down a valid move? Player V can't move down
+        if (j < length-1 && !piece.equals(Tile.PLAYER_V)) {
+            if (tiles[j+1][i].isEmpty()) {
+                moves.add(new Move(i,j,Move.Direction.DOWN));
+            }
+        }
+        // DEBUG: print moves
+        //for (Move move: moves) {
+        //    System.out.println(move);
+        //}
+
+        return moves;
     }
 
     /**

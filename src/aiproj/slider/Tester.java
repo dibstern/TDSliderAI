@@ -18,7 +18,10 @@ public final class Tester {
 
         // Takes an integer input
         int n = 4;
-        String testboard = "H + + +\nH + B +\nH B + +\n+ V V V\n";
+        String testboard;
+        testboard = "+ + H +\nH + + +\nH + V +\n+ + V V\n";
+        //testboard = "+ + + H\n+ + + +\n+ + + +\n+ + + +\n";
+
         char testCellType = 'H';
 
         DopePlayer newgame = new DopePlayer();
@@ -26,8 +29,15 @@ public final class Tester {
         newgame.getBoard().boardDisplay();
 
         // Tests the legalMoves function and player piece assignment
-        System.out.println(newgame.getOurPlayer() + " has " + newgame.getLegalMoveCountPlayer() + " possible moves.");
-        System.out.println(newgame.getOpponent() + " has " + newgame.getLegalMoveCountOpponent() + " possible moves.");
+        //System.out.println(newgame.getOurPlayer() + " has " + newgame.getLegalMoveCountPlayer() + " possible moves.");
+        //System.out.println(newgame.getOpponent() + " has " + newgame.getLegalMoveCountOpponent() + " possible moves.");
+
+        System.out.println(newgame.getOurPlayer() + "'s moves: ");
+        System.out.println(newgame.getMovesPlayer());
+
+        System.out.println(newgame.getOpponent() + "'s moves: ");
+        System.out.println(newgame.getMovesOpponent());
+
 
     }
 }
