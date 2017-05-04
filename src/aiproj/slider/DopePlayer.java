@@ -70,34 +70,36 @@ public class DopePlayer implements SliderPlayer {
         return;
     }
 
-    Tile fromTile = curr_board.getTile(move.j, move.i);
-    int toI = move.i;
-    int toJ = move.j;
+    // Provided Move Implementation uses i as x and j as y
+    int fromX = move.i;
+    int fromY = move.j;
+    int toX = fromX;
+    int toY = fromY;
+
+    Tile fromTile = curr_board.getTile(fromX, fromY);
+    Tile toTile;
     String cellType = fromTile.getCellType();
 
-    Tile toTile;
-
     if (move.d == Move.Direction.LEFT) {
-        toI -= 1;
+        toX -= 1;
     }
     if (move.d == Move.Direction.RIGHT) {
-        toI += 1;
+        toX += 1;
     }
     if (move.d == Move.Direction.UP) {
-        toJ -= 1;
+        toY += 1;
     }
     if (move.d == Move.Direction.DOWN) {
-        toJ += 1;
+        toY -= 1;
     }
 
-    toTile = curr_board.getTile(toI,toJ);
+    toTile = curr_board.getTile(toX, toY);
 
     fromTile.setCellType(Tile.EMPTY);
 
     toTile.setCellType(cellType);
 
     refresh();
-
 
     }
 

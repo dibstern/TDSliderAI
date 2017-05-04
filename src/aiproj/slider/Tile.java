@@ -20,15 +20,19 @@ public class Tile {
     private String cellType;
     private int col;
     private int row;
+    private int x;
+    private int y;
 
     /**
      * Constructor for Tile
      * @param cellType String representing the type of cell
      */
-    public Tile (String cellType, int row, int col) {
+    public Tile(String cellType, int row, int col, int n) {
         this.cellType = cellType;
         this.col = col;
         this.row = row;
+        this.x = col;
+        this.y = n-1-row;
     }
 
     public String getCellType() {
@@ -43,11 +47,17 @@ public class Tile {
         return false;
     }
 
-    /* Getter Method that returns an integer array of the row, col (j, i) coordinates */
-    public int[] getPos() {
-        int[] newPos = new int[2];
-        newPos[0] = this.row;
-        newPos[1] = this.col;
+    /* Getter Method that returns an integer array of (x, y) coordinates */
+    public int[] getCoord() {
+        int[] coord = new int[2];
+        coord[0] = this.x;
+        coord[1] = this.y;
+        return coord;
+    }
+
+    /*
+    public int getPos() {
+        int[] newPos = {row, col};
         return newPos;
     }
 
@@ -56,8 +66,8 @@ public class Tile {
     }
 
     public int getCol() {
-        return col;
-    }
+        return col; 
+    }*/
 
     public void setCellType(String type) {
         this.cellType = type;

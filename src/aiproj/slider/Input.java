@@ -29,13 +29,13 @@ public final class Input {
         Scanner read = new Scanner(strInput);
 
         Board board = new Board(N);
-        for (int j = 0; j < N; j++) {
-            for (int i = 0; i < N; i++) {
+        for (int i = 0; i < N; i++) {
+            for (int j = 0; j < N; j++) {
 
                 // Create tile and add to board
                 String readtype = read.next();
-                Tile new_tile = new Tile(readtype, j, i);
-                board.getTiles()[j][i] = new_tile;
+                Tile new_tile = new Tile(readtype, i, j, N);
+                board.getTiles()[i][j] = new_tile;
 
                 // If it's a player tile then add to appropriate list
                 if (new_tile.getCellType().equals(Tile.PLAYER_H)) {

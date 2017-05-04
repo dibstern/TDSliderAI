@@ -30,6 +30,7 @@ public class Move {
 
     /** Create a new move for a given position (i, j) in a given direction d */
     public Move(int i, int j, Move.Direction d) {
+        // GO FROM NORMAL i AND j (2D ARRAY STYLE) TO CARTESIAN COORDS HERE
         this.i = i;
         this.j = j;
         this.d = d;

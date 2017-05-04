@@ -6,7 +6,7 @@
  * Reads in and Stores a given board state for the adversarial game Slider
  * Counts legal moves for a given board state
  *
- * @author David Stern (dstern 585870) and Hugh Edwards (hughe 584183)
+ * @author David Stern (dstern 585870) ai Hugh Edwards (hughe 584183)
  * @since 2017-03-26
  */
 package aiproj.slider;
@@ -23,7 +23,7 @@ public class Board {
 
     /**
      * Constructor for board.
-     * @param N the length and width of the board in tiles
+     * @param N the length ai width of the board in tiles
      */
     public Board(int N) {
         tiles = new Tile[N][N];
@@ -46,29 +46,27 @@ public class Board {
         }
 
         for (Tile tile : playerTiles) {
-            System.out.println(tile.getCol() + " " + tile.getRow());
+            //System.out.println(tile.getCol() + " " + tile.getRow());
             moves.addAll(getTileMoves(tile));
         }
 
         return moves;
     }
 
-    // Add Type as an argument so we can loop through one list only, if required?
-    /**
-     * SWAPPED i AND j TO REFLECT CHANGE IN PART B
-     * Counts number of legal moves on the board
-     *
-     * @param N Size of board
-     * @return {H, V} where H is the number of legal moves for player H
-     * and V is the number of legal moves for player V
-     */
+    /* Add Type as an argument so we can loop through one list only, if required?
+    //
+      Counts number of legal moves on the board
+     
+      @param N Size of board
+      @return {H, V} where H is the number of legal moves for player H
+      ai V is the number of legal moves for player V
+     //
     public int[] countMoves(String cell_type, Boolean both) {
 
         /* Initialise legalMoveCount in the form {H, V} where H is the
          * number of legal moves for player H and V is the number of
-         * legal moves for player V */
+         * legal moves for player V /
         int[] legalMoveCount = {0, 0};
-
 
         // MAKE THIS NICER
 
@@ -89,109 +87,126 @@ public class Board {
         }
 
         return legalMoveCount;
-    }
+    }*/
 
-    /** Returns an arraylist all the moves available to the given player tile
-     *
-     * @param theTile current tile
-     * @return arraylist of moves
-     */
+
+    // GO FROM NORMAL i AND j (2D ARRAY STYLE) TO CARTESIAN COORDS HERE
+    /*
     private ArrayList<Move> getTileMoves(Tile theTile) {
         ArrayList<Move> moves = new ArrayList<Move>();
 
         String piece = theTile.getCellType();
 
-        int j = theTile.getRow();
-        int i = theTile.getCol();
+        int i = theTile.getRow();
+        int j = theTile.getCol();
 
         // Tile Up a valid move if Player V in the top row (j == 0) or it's empty
-        if (j > 0 || piece.equals(Tile.PLAYER_V)) {
-            if (j==0 || tiles[j-1][i].isEmpty()) {
-                moves.add(new Move(i,j,Move.Direction.UP));
+        if (i > 0 || piece.equals(Tile.PLAYER_V)) {
+            if (i==0 || tiles[i-1][j].isEmpty()) {
+                moves.add(new Move(j,i,Move.Direction.UP));
             }
         }
         // Tile Right a valid move if Player H in the rightmost column or if it's empty
-        if (i < length-1 || piece.equals(Tile.PLAYER_H)) {
-            if (i==length-1 || tiles[j][i+1].isEmpty()) {
-                moves.add(new Move(i,j,Move.Direction.RIGHT));
+        if (j < length-1 || piece.equals(Tile.PLAYER_H)) {
+            if (j==length-1 || tiles[i][j+1].isEmpty()) {
+                moves.add(new Move(j,i,Move.Direction.RIGHT));
             }
         }
         // Tile Left a valid move? Player H can't move left
-        if (i > 0 && !piece.equals(Tile.PLAYER_H)) {
-            if (tiles[j][i-1].isEmpty()) {
-                moves.add(new Move(i,j,Move.Direction.LEFT));
+        if (j > 0 && !piece.equals(Tile.PLAYER_H)) {
+            if (tiles[i][j-1].isEmpty()) {
+                moves.add(new Move(j,i,Move.Direction.LEFT));
             }
         }
         // Tile Down a valid move? Player V can't move down
-        if (j < length-1 && !piece.equals(Tile.PLAYER_V)) {
-            if (tiles[j+1][i].isEmpty()) {
-                moves.add(new Move(i,j,Move.Direction.DOWN));
+        if (i < length-1 && !piece.equals(Tile.PLAYER_V)) {
+            if (tiles[i+1][j].isEmpty()) {
+                moves.add(new Move(j,i,Move.Direction.DOWN));
             }
         }
-        // DEBUG: print moves
-        //for (Move move: moves) {
-        //    System.out.println(move);
-        //}
+        return moves;
+    }*/
 
+    private ArrayList<Move> getTileMoves(Tile theTile) {
+        ArrayList<Move> moves = new ArrayList<Move>();
+
+        String piece = theTile.getCellType();
+        int[] coord = theTile.getCoord();
+        int x = coord[0];
+        int y = coord[1];
+
+        // Tile Up a valid move if Player V in the top row (j == 0) or it's empty
+        if (y < length-1 || piece.equals(Tile.PLAYER_V)) {
+            if (y==length-1 || getTile(x, y+1).isEmpty()) {
+                moves.add(new Move(x,y,Move.Direction.UP));
+            }
+        }
+        // Tile Right a valid move if Player H in the rightmost column or if it's empty
+        if (x < length-1 || piece.equals(Tile.PLAYER_H)) {
+            if (x==length-1 || getTile(x+1,y).isEmpty()) {
+                moves.add(new Move(x,y,Move.Direction.RIGHT));
+            }
+        }
+        // Tile Left a valid move? Player H can't move left
+        if (x > 0 && !piece.equals(Tile.PLAYER_H)) {
+            if (getTile(x-1, y).isEmpty()) {
+                moves.add(new Move(x,y,Move.Direction.LEFT));
+            }
+        }
+        // Tile Down a valid move? Player V can't move down
+        if (y > 0 && !piece.equals(Tile.PLAYER_V)) {
+            if (getTile(x, y-1).isEmpty()) {
+                moves.add(new Move(x,y,Move.Direction.DOWN));
+            }
+        }
         return moves;
     }
 
-    /**
-     * SWAPPED i AND j TO REFLECT CHANGE IN PART B
-     * Increments legalMoveCount based on the number of legal V and H
-     * moves at a given cell
-     *
-     * @param i cell column
-     * @param j cell row
-     * @param legalMoveCount count of legal H and V moves in the form {H,V}
-     * @return an updated legalMoveCount {H,V}
-     */
+    /*
     private int[] tileMoves(Tile theTile, int[] legalMoveCount) {
 
         int moves = 0;
         String piece = theTile.getCellType();
         int[] pos = theTile.getPos();
-        int j = pos[0];
-        int i = pos[1];
+        int i = pos[0];
+        int j = pos[1];
 
         // Tile Up a valid move if Player V in the top row (j == 0) or it's empty
-        if (j > 0 || piece.equals(Tile.PLAYER_V)) {
-            moves += (j == 0 ? 1 : (tiles[j-1][i].isEmpty() ? 1 : 0));
+        if (i > 0 || piece.equals(Tile.PLAYER_V)) {
+            moves += (i == 0 ? 1 : (tiles[i-1][j].isEmpty() ? 1 : 0));
         }
         // Tile Right a valid move if Player H in the rightmost column or if it's empty
-        if (i < length-1 || piece.equals(Tile.PLAYER_H)) {
-            moves += (i == length-1 ? 1 : (tiles[j][i+1].isEmpty() ? 1 : 0));
+        if (j < length-1 || piece.equals(Tile.PLAYER_H)) {
+            moves += (j == length-1 ? 1 : (tiles[i][j+1].isEmpty() ? 1 : 0));
         }
         // Tile Left a valid move? Player H can't move left
-        if (i > 0 && !piece.equals(Tile.PLAYER_H)) {
-            moves += (tiles[j][i-1].isEmpty() ? 1 : 0);
+        if (j > 0 && !piece.equals(Tile.PLAYER_H)) {
+            moves += (tiles[i][j-1].isEmpty() ? 1 : 0);
         }
         // Tile Down a valid move? Player V can't move down
-        if (j < length-1 && !piece.equals(Tile.PLAYER_V)) {
-            moves += (tiles[j+1][i].isEmpty() ? 1 : 0);
+        if (i < length-1 && !piece.equals(Tile.PLAYER_V)) {
+            moves += (tiles[i+1][j].isEmpty() ? 1 : 0);
         }
         // Add legal valid moves to legalMoveCount based on the player
         legalMoveCount[0] += (piece.equals(Tile.PLAYER_H) ? moves : 0);
         legalMoveCount[1] += (piece.equals(Tile.PLAYER_V) ? moves : 0);
 
         return legalMoveCount;
-
-    }
+    }*/
 
     /* Prints the board */
-    /* SWAPPED i AND j TO REFLECT CHANGE IN PART B */
     public void boardDisplay() {
         String currBoard = "";
-        for (int j = 0; j < length; j++) {
-            for (int i = 0; i < length; i++) {
-                if (i < length - 1) {
-                    currBoard += tiles[j][i].getCellType() + " ";
+        for (int i = 0; i < length; i++) {
+            for (int j = 0; j < length; j++) {
+                if (j < length - 1) {
+                    currBoard += tiles[i][j].getCellType() + " ";
                 }
-                else if (j < length - 1) {
-                    currBoard += tiles[j][i].getCellType() + "\n";
+                else if (i < length - 1) {
+                    currBoard += tiles[i][j].getCellType() + "\n";
                 }
                 else {
-                    currBoard += tiles[j][i].getCellType();
+                    currBoard += tiles[i][j].getCellType();
                 }
             }
         }
@@ -201,6 +216,11 @@ public class Board {
 
     public Tile[][] getTiles() {
         return tiles;
+    }
+
+    /* Access Tile Using (x, y) coordinates */
+    public Tile getTile(int x, int y) {
+        return tiles[length-1-y][x];
     }
 
     /* Get the length of the board */
@@ -213,23 +233,19 @@ public class Board {
         return h_tiles;
     }
 
-    /* Mutate the array of Horizontal Tiles */
-    public void addHTile(Tile newTile) {
-        h_tiles.add(newTile);
-    }
-
     /* Get the array of Vertical Tiles */
     public ArrayList<Tile> getVTiles() {
         return v_tiles;
     }
 
+    /* Mutate the array of Horizontal Tiles */
+    public void addHTile(Tile newTile) {
+        h_tiles.add(newTile);
+    }
+
     /* Mutate the array of Vertical Tiles */
     public void addVTile(Tile newTile) {
         v_tiles.add(newTile);
-    }
-
-    public Tile getTile(int i, int j) {
-        return tiles[i][j];
     }
 
 }
