@@ -22,3 +22,5 @@ out/production/aiproj_B/aiproj/slider/Referee$IllegalMoveException.class
 out/production/aiproj_B/aiproj/slider/Referee$Options.class
 out/production/aiproj_B/aiproj/slider/Referee$Piece.class
 out/production/aiproj_B/aiproj/slider/Referee$Player.class
+*.class
+*.iml
