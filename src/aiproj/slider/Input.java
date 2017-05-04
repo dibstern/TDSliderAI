@@ -33,8 +33,7 @@ public final class Input {
             for (int j = 0; j < N; j++) {
 
                 // Create tile and add to board
-                String readtype = read.next();
-                Tile new_tile = new Tile(readtype, i, j, N);
+                Tile new_tile = new Tile(read.next(), i, j, N);
                 board.getTiles()[i][j] = new_tile;
 
                 // If it's a player tile then add to appropriate list

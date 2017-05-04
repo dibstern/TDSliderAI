@@ -12,6 +12,7 @@
 package aiproj.slider;
 
 import java.util.ArrayList;
+import java.util.function.Predicate;
 
 public class Board {
 
@@ -46,86 +47,11 @@ public class Board {
         }
 
         for (Tile tile : playerTiles) {
-            //System.out.println(tile.getCol() + " " + tile.getRow());
             moves.addAll(getTileMoves(tile));
         }
 
         return moves;
     }
-
-    /* Add Type as an argument so we can loop through one list only, if required?
-    //
-      Counts number of legal moves on the board
-     
-      @param N Size of board
-      @return {H, V} where H is the number of legal moves for player H
-      ai V is the number of legal moves for player V
-     //
-    public int[] countMoves(String cell_type, Boolean both) {
-
-        /* Initialise legalMoveCount in the form {H, V} where H is the
-         * number of legal moves for player H and V is the number of
-         * legal moves for player V /
-        int[] legalMoveCount = {0, 0};
-
-        // MAKE THIS NICER
-
-        // If we're looking for h_tiles or both types, update our legal move count
-        if (cell_type.equals(Tile.PLAYER_H) || both) {
-            for (Tile eachtile : h_tiles) {
-                legalMoveCount = tileMoves(eachtile, legalMoveCount);
-                getTileMoves(eachtile);
-            }
-        }
-        // If we're looking for v_tiles or both types, update our legal move count
-        if (cell_type.equals(Tile.PLAYER_V) || both) {
-            for (Tile eachtile : v_tiles) {
-                legalMoveCount = tileMoves(eachtile, legalMoveCount);
-                getTileMoves(eachtile);
-
-            }
-        }
-
-        return legalMoveCount;
-    }*/
-
-
-    // GO FROM NORMAL i AND j (2D ARRAY STYLE) TO CARTESIAN COORDS HERE
-    /*
-    private ArrayList<Move> getTileMoves(Tile theTile) {
-        ArrayList<Move> moves = new ArrayList<Move>();
-
-        String piece = theTile.getCellType();
-
-        int i = theTile.getRow();
-        int j = theTile.getCol();
-
-        // Tile Up a valid move if Player V in the top row (j == 0) or it's empty
-        if (i > 0 || piece.equals(Tile.PLAYER_V)) {
-            if (i==0 || tiles[i-1][j].isEmpty()) {
-                moves.add(new Move(j,i,Move.Direction.UP));
-            }
-        }
-        // Tile Right a valid move if Player H in the rightmost column or if it's empty
-        if (j < length-1 || piece.equals(Tile.PLAYER_H)) {
-            if (j==length-1 || tiles[i][j+1].isEmpty()) {
-                moves.add(new Move(j,i,Move.Direction.RIGHT));
-            }
-        }
-        // Tile Left a valid move? Player H can't move left
-        if (j > 0 && !piece.equals(Tile.PLAYER_H)) {
-            if (tiles[i][j-1].isEmpty()) {
-                moves.add(new Move(j,i,Move.Direction.LEFT));
-            }
-        }
-        // Tile Down a valid move? Player V can't move down
-        if (i < length-1 && !piece.equals(Tile.PLAYER_V)) {
-            if (tiles[i+1][j].isEmpty()) {
-                moves.add(new Move(j,i,Move.Direction.DOWN));
-            }
-        }
-        return moves;
-    }*/
 
     private ArrayList<Move> getTileMoves(Tile theTile) {
         ArrayList<Move> moves = new ArrayList<Move>();
@@ -136,25 +62,21 @@ public class Board {
         int y = coord[1];
 
         // Tile Up a valid move if Player V in the top row (j == 0) or it's empty
-        if (y < length-1 || piece.equals(Tile.PLAYER_V)) {
-            if (y==length-1 || getTile(x, y+1).isEmpty()) {
-                moves.add(new Move(x,y,Move.Direction.UP));
-            }
+        if ((y == length-1 && piece.equals(Tile.PLAYER_V)) || (y < length-1 && getTile(x, y+1).isEmpty())) {
+            moves.add(new Move(x,y,Move.Direction.UP));
         }
         // Tile Right a valid move if Player H in the rightmost column or if it's empty
-        if (x < length-1 || piece.equals(Tile.PLAYER_H)) {
-            if (x==length-1 || getTile(x+1,y).isEmpty()) {
-                moves.add(new Move(x,y,Move.Direction.RIGHT));
-            }
+        if ((x==length-1 && piece.equals(Tile.PLAYER_H)) || (x < length-1 && getTile(x+1,y).isEmpty()) ) {
+            moves.add(new Move(x,y,Move.Direction.RIGHT));
         }
         // Tile Left a valid move? Player H can't move left
-        if (x > 0 && !piece.equals(Tile.PLAYER_H)) {
+        if (piece.equals(Tile.PLAYER_V) && x > 0) {
             if (getTile(x-1, y).isEmpty()) {
                 moves.add(new Move(x,y,Move.Direction.LEFT));
             }
         }
         // Tile Down a valid move? Player V can't move down
-        if (y > 0 && !piece.equals(Tile.PLAYER_V)) {
+        if (piece.equals(Tile.PLAYER_H) && y > 0) {
             if (getTile(x, y-1).isEmpty()) {
                 moves.add(new Move(x,y,Move.Direction.DOWN));
             }
@@ -162,58 +84,7 @@ public class Board {
         return moves;
     }
 
-    /*
-    private int[] tileMoves(Tile theTile, int[] legalMoveCount) {
-
-        int moves = 0;
-        String piece = theTile.getCellType();
-        int[] pos = theTile.getPos();
-        int i = pos[0];
-        int j = pos[1];
-
-        // Tile Up a valid move if Player V in the top row (j == 0) or it's empty
-        if (i > 0 || piece.equals(Tile.PLAYER_V)) {
-            moves += (i == 0 ? 1 : (tiles[i-1][j].isEmpty() ? 1 : 0));
-        }
-        // Tile Right a valid move if Player H in the rightmost column or if it's empty
-        if (j < length-1 || piece.equals(Tile.PLAYER_H)) {
-            moves += (j == length-1 ? 1 : (tiles[i][j+1].isEmpty() ? 1 : 0));
-        }
-        // Tile Left a valid move? Player H can't move left
-        if (j > 0 && !piece.equals(Tile.PLAYER_H)) {
-            moves += (tiles[i][j-1].isEmpty() ? 1 : 0);
-        }
-        // Tile Down a valid move? Player V can't move down
-        if (i < length-1 && !piece.equals(Tile.PLAYER_V)) {
-            moves += (tiles[i+1][j].isEmpty() ? 1 : 0);
-        }
-        // Add legal valid moves to legalMoveCount based on the player
-        legalMoveCount[0] += (piece.equals(Tile.PLAYER_H) ? moves : 0);
-        legalMoveCount[1] += (piece.equals(Tile.PLAYER_V) ? moves : 0);
-
-        return legalMoveCount;
-    }*/
-
-    /* Prints the board */
-    public void boardDisplay() {
-        String currBoard = "";
-        for (int i = 0; i < length; i++) {
-            for (int j = 0; j < length; j++) {
-                if (j < length - 1) {
-                    currBoard += tiles[i][j].getCellType() + " ";
-                }
-                else if (i < length - 1) {
-                    currBoard += tiles[i][j].getCellType() + "\n";
-                }
-                else {
-                    currBoard += tiles[i][j].getCellType();
-                }
-            }
-        }
-        System.out.println("Board:");
-        System.out.println(currBoard);
-    }
-
+    /* Gets the board's tiles */
     public Tile[][] getTiles() {
         return tiles;
     }
@@ -221,6 +92,19 @@ public class Board {
     /* Access Tile Using (x, y) coordinates */
     public Tile getTile(int x, int y) {
         return tiles[length-1-y][x];
+    }
+
+    /* Gets the 2D array indices, given cartesian x,y coordinates */
+    public int[] getPos(int givenX, int givenY) {
+        int[] pos = {(length - 1 - givenY), givenX};
+        return pos;
+    }
+
+    /* Mutate the Board State */
+    public void updateTile(int x, int y, String newCellType) {
+        if (length-1-y < length && length-1-y >= 0 && x < length && x >= 0) {
+            tiles[length-1-y][x].setCellType(newCellType);
+        }
     }
 
     /* Get the length of the board */
@@ -246,6 +130,35 @@ public class Board {
     /* Mutate the array of Vertical Tiles */
     public void addVTile(Tile newTile) {
         v_tiles.add(newTile);
+    }
+
+    /* Remove old tiles from the recorded v_tiles array */
+    public void removeVTile(Tile oldTile) {
+        Predicate<Tile> tilePredicate = t-> (t.getRow() == oldTile.getRow() && t.getCol() == oldTile.getCol());
+        v_tiles.removeIf(tilePredicate);
+    }
+
+    /* Remove old tiles from the recorded h_tiles array */
+    public void removeHTile(Tile oldTile) {
+        Predicate<Tile> tilePredicate = t-> (t.getRow() == oldTile.getRow() && t.getCol() == oldTile.getCol());
+        h_tiles.removeIf(tilePredicate);
+    }
+
+    /* Prints the board */
+    public void boardDisplay() {
+        String currBoard = "";
+        for (int i = 0; i < length; i++) {
+            for (int j = 0; j < length; j++) {
+                if (j < length - 1) {
+                    currBoard += tiles[i][j].getCellType() + " ";
+                }
+                else {
+                    currBoard += tiles[i][j].getCellType() + "\n";
+                }
+            }
+        }
+        System.out.println("Board:");
+        System.out.println(currBoard);
     }
 
 }

@@ -55,11 +55,12 @@ public class Tile {
         return coord;
     }
 
+
     /*
     public int getPos() {
         int[] newPos = {row, col};
         return newPos;
-    }
+    }*/
 
     public int getRow() {
         return row;
@@ -67,7 +68,7 @@ public class Tile {
 
     public int getCol() {
         return col; 
-    }*/
+    }
 
     public void setCellType(String type) {
         this.cellType = type;
@@ -77,4 +78,8 @@ public class Tile {
         return this.cellType;
     }
 
+    @Override
+    public String toString() {
+        return cellType + " - Ctn: ("+x+","+y+"), Arr: ("+row+", "+col+")";
+    }
 }

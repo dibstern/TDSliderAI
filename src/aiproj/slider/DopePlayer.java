@@ -6,6 +6,7 @@ import aiproj.slider.Input;
 import java.lang.Character;
 import java.util.ArrayList;
 import java.util.List;
+import aiproj.slider.Move;
 
 import static aiproj.slider.Input.*;
 
@@ -14,10 +15,9 @@ public class DopePlayer implements SliderPlayer {
 
     // Keeping Track of the Board, Player Piece Types, Number of current legal moves
     private Board curr_board;
+    private int boardsize;
     private String ourPlayer;
     private String Opponent;
-    private int legalMoveCountPlayer;
-    private int legalMoveCountOpponent;
     private ArrayList<Move> movesPlayer;
     private ArrayList<Move> movesOpponent;
 
@@ -43,14 +43,11 @@ public class DopePlayer implements SliderPlayer {
         // Reading in the Board
         curr_board = readBoard(dimension, board);
 
-        // Reading in the number of legal moves
-        //int[] legalMoves = curr_board.countMoves(playerType, true);
-        //legalMoveCountPlayer = ourPlayer.equals(Tile.PLAYER_H) ? legalMoves[0] : legalMoves[1];
-        //legalMoveCountOpponent = Opponent.equals(Tile.PLAYER_H) ? legalMoves[0] : legalMoves[1];
+        // Saving Board size
+        boardsize = dimension;
 
+        // Getting All Possible Moves
         refresh();
-
-
     }
 
 
@@ -77,7 +74,6 @@ public class DopePlayer implements SliderPlayer {
     int toY = fromY;
 
     Tile fromTile = curr_board.getTile(fromX, fromY);
-    Tile toTile;
     String cellType = fromTile.getCellType();
 
     if (move.d == Move.Direction.LEFT) {
@@ -92,23 +88,62 @@ public class DopePlayer implements SliderPlayer {
     if (move.d == Move.Direction.DOWN) {
         toY -= 1;
     }
-
-    toTile = curr_board.getTile(toX, toY);
-
-    fromTile.setCellType(Tile.EMPTY);
-
-    toTile.setCellType(cellType);
-
+    updateTileArray(move);
+    curr_board.updateTile(toX, toY, cellType);
+    curr_board.updateTile(fromX, fromY, Tile.EMPTY);
     refresh();
-
     }
 
     /**
-     * Refreshes variables about the board given its state
+     * Refreshes variables about the board given its state and given which turn has been played
      */
     private void refresh() {
         movesPlayer = curr_board.getAllMoves(ourPlayer);
         movesOpponent = curr_board.getAllMoves(Opponent);
+    }
+
+    /**
+     * Updates the recorded array of tiles, given the new move
+     * @param newMove A move object, played either by the player or by the opponent.
+     */
+    private void updateTileArray(Move newMove) {
+        // Find new X and Y
+        int oldX = newMove.i;
+        int oldY = newMove.j;
+        Move.Direction direction = newMove.d;
+
+        int newX = (direction == Move.Direction.LEFT) ? (oldX - 1) : oldX;
+        newX = (direction == Move.Direction.RIGHT) ? (oldX + 1) : newX;
+
+        int newY = (direction == Move.Direction.UP) ? (oldY + 1) : oldY;
+        newY = (direction == Move.Direction.DOWN) ? (oldY - 1) : newY;
+
+        // Retrieve old tile, and its type
+        Tile oldTile = curr_board.getTile(oldX, oldY);
+        String tileType = oldTile.getCellType();
+
+        // Get Positional Indices for new tile
+        int[] newpos = curr_board.getPos(newX, newY);
+        int newRow = newpos[0];
+        int newCol = newpos[1];
+
+        // Use these to find New tile
+        Tile newtile = new Tile(tileType, newRow, newCol, boardsize);
+
+        // If h, remove old tile from h_tiles and add new tile to h_tiles
+        if (tileType.equals(Tile.PLAYER_H)) {
+            curr_board.removeHTile(curr_board.getTile(oldX, oldY));
+            if (validPos(newX, newY)) {
+                curr_board.addHTile(newtile);
+            }
+        }
+        // If V (updateTiles only called on non-null moves so can assume it's V if not H)
+        else if (tileType.equals(Tile.PLAYER_V)) {
+            curr_board.removeVTile(curr_board.getTile(oldX, oldY));
+            if (validPos(newX, newY)) {
+                curr_board.addVTile(newtile);
+            }
+        }
     }
 
 
@@ -132,23 +167,14 @@ public class DopePlayer implements SliderPlayer {
         if (movesPlayer.isEmpty()) {
             return null;
         }
-        System.out.println(ourPlayer + " " + movesPlayer.get(0));
-        return movesPlayer.get(0);
+        Move firstMove = movesPlayer.get(0);
+        update(firstMove);
+        return firstMove;
     }
 
     /* Getter Method for Board */
     public Board getBoard() {
         return curr_board;
-    }
-
-    /* Getter Method for legalMoveCountPlayer */
-    public int getLegalMoveCountPlayer() {
-        return legalMoveCountPlayer;
-    }
-
-    /* Getter Method for legalMoveCountOpponent */
-    public int getLegalMoveCountOpponent() {
-        return legalMoveCountOpponent;
     }
 
     /* Getter Method for legalMoveCountPlayer */
@@ -167,6 +193,13 @@ public class DopePlayer implements SliderPlayer {
     /* Getter Method for Opponent */
     public String getOpponent() {
         return Opponent;
+    }
+
+    private Boolean validPos(int x, int y) {
+        if (x < boardsize && x >= 0 && boardsize-y-1 < boardsize && boardsize-y-1 >= 0) {
+            return true;
+        }
+        return false;
     }
 
 }
