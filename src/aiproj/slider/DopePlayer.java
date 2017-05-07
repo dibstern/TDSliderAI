@@ -98,6 +98,7 @@ public class DopePlayer implements SliderPlayer {
     refresh();
     }
 
+
     /**
      * Refreshes variables about the board given its state and given which turn has been played
      */
@@ -152,6 +153,51 @@ public class DopePlayer implements SliderPlayer {
 
 
     /**
+     * Same as updateTileArray except modifies any board passed in (not the current board)
+     * So can be used for any board
+     */
+    private void updateTileArray2(Board board, Move newMove) {
+        // Find new X and Y
+        int oldX = newMove.i;
+        int oldY = newMove.j;
+        Move.Direction direction = newMove.d;
+
+        int newX = (direction == Move.Direction.LEFT) ? (oldX - 1) : oldX;
+        newX = (direction == Move.Direction.RIGHT) ? (oldX + 1) : newX;
+
+        int newY = (direction == Move.Direction.UP) ? (oldY + 1) : oldY;
+        newY = (direction == Move.Direction.DOWN) ? (oldY - 1) : newY;
+
+        // Retrieve old tile, and its type
+        Tile oldTile = board.getTile(oldX, oldY);
+        String tileType = oldTile.getCellType();
+
+        // Get Positional Indices for new tile
+        int[] newpos = board.getPos(newX, newY);
+        int newRow = newpos[0];
+        int newCol = newpos[1];
+
+        // Use these to find New tile
+        Tile newtile = new Tile(tileType, newRow, newCol, board.getLength());
+
+        // If h, remove old tile from h_tiles and add new tile to h_tiles
+        if (tileType.equals(Tile.PLAYER_H)) {
+            board.removeHTile(board.getTile(oldX, oldY));
+            if (validPos2(newX, newY, board)) {
+                board.addHTile(newtile);
+            }
+        }
+        // If V (updateTiles only called on non-null moves so can assume it's V if not H)
+        else if (tileType.equals(Tile.PLAYER_V)) {
+            board.removeVTile(board.getTile(oldX, oldY));
+            if (validPos2(newX, newY,board)) {
+                board.addVTile(newtile);
+            }
+        }
+    }
+
+
+    /**
      * Request a decision from the player as to which move they would like to
      * make next. Your player should consider its options and select the best
      * move available at the time, according to whatever strategy you have
@@ -171,7 +217,8 @@ public class DopePlayer implements SliderPlayer {
         if (movesPlayer.isEmpty()) {
             return null;
         }
-        Move firstMove = movesPlayer.get(0);
+        //Move firstMove = movesPlayer.get(0);
+        Move firstMove = minimaxDecision(curr_board, movesPlayer);
         update(firstMove);
 
         //DEBUG
@@ -182,8 +229,7 @@ public class DopePlayer implements SliderPlayer {
 
     private int evaluateBoard(Board board) {
 
-        int total = 0;
-
+        // Set list of tiles based on who the player is
         if (ourPlayer.equals(Tile.PLAYER_H)) {
             this.playerTiles = board.getHTiles();
             this.opponentTiles = board.getVTiles();
@@ -211,12 +257,9 @@ public class DopePlayer implements SliderPlayer {
         int sumPlayerDistances = sumDistances(playerTiles,  board.getLength());
         int sumOpponentDistances = sumDistances(opponentTiles, board.getLength());
 
-
-
         // Add all features to an arraylist and define weights
         // Weights are presently +ve (good) or -ve (bad)
         // Eventually we will define these elsewhere with Machine Learning
-
 
         ArrayList<Integer> features = new ArrayList<Integer>();
         ArrayList<Integer> featureWeights = new ArrayList<Integer>();
@@ -227,16 +270,12 @@ public class DopePlayer implements SliderPlayer {
         features.add(sumOpponentDistances);
         featureWeights.add(1);
 
-
-        // Set up feature weights
-        // (dummy values all 1 or -1 - will change after machine learning is applied
-
         // Sum total based on feature weights
 
+        int total = 0;
         for (int i=0; i<featureWeights.size();i++) {
             total += featureWeights.get(i) * features.get(i);
         }
-
         return total;
     }
 
@@ -263,6 +302,74 @@ public class DopePlayer implements SliderPlayer {
         return total;
     }
 
+    public Move minimaxDecision(Board board, ArrayList<Move> moves) {
+
+
+        if (moves.size() ==0) {
+            return null;
+        }
+
+        for (Move move : moves) {
+            Board newBoard = board.copyBoard();
+            modifyBoard(newBoard, move);
+            newBoard.boardDisplay();
+            int val = minimaxValue(board);
+        }
+
+
+        return moves.get(0);
+
+    }
+
+    public int minimaxValue(Board board) {
+
+        return 0;
+    }
+
+    private Board modifyBoard(Board board, Move move) {
+
+
+        if (move == null) {
+            return board;
+        }
+
+        // Provided Move Implementation uses i as x and j as y
+        int fromX = move.i;
+        int fromY = move.j;
+        int toX = fromX;
+        int toY = fromY;
+
+        Tile fromTile = board.getTile(fromX, fromY);
+        String cellType = fromTile.getCellType();
+
+        if (move.d == Move.Direction.LEFT) {
+            toX -= 1;
+        }
+        if (move.d == Move.Direction.RIGHT) {
+            toX += 1;
+        }
+        if (move.d == Move.Direction.UP) {
+            toY += 1;
+        }
+        if (move.d == Move.Direction.DOWN) {
+            toY -= 1;
+        }
+        updateTileArray2(board, move);
+        board.updateTile(toX, toY, cellType);
+        board.updateTile(fromX, fromY, Tile.EMPTY);
+
+        // generic altering boards doesnt need a refresh
+        //refresh();
+
+        return board;
+
+
+
+    }
+
+
+
+
     /* Getter Method for Board */
     public Board getBoard() {
         return curr_board;
@@ -287,6 +394,21 @@ public class DopePlayer implements SliderPlayer {
     }
 
     private Boolean validPos(int x, int y) {
+        if (x < boardsize && x >= 0 && boardsize-y-1 < boardsize && boardsize-y-1 >= 0) {
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     *  Same as validPos but takes a generic board not the current board
+     * @param x
+     * @param y
+     * @param board
+     * @return
+     */
+    private Boolean validPos2(int x, int y, Board board) {
+        boardsize = board.getLength();
         if (x < boardsize && x >= 0 && boardsize-y-1 < boardsize && boardsize-y-1 >= 0) {
             return true;
         }

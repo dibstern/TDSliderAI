@@ -35,6 +35,23 @@ public class Tile {
         this.y = n-1-row;
     }
 
+    /**
+     * Constructor for Tile
+     * @param cellType String representing the type of cell
+     */
+    public Tile(String cellType, int row, int col, int x, int y) {
+        this.cellType = cellType;
+        this.col = col;
+        this.row = row;
+        this.x = x;
+        this.y = y;
+    }
+
+    public Tile copyTile() {
+        Tile newTile = new Tile(cellType, row, col, x,y);
+        return newTile;
+    }
+
     public String getCellType() {
         return this.cellType;
     }

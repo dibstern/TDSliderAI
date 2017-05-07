@@ -31,6 +31,42 @@ public class Board {
         length = N;
     }
 
+    public Board copyBoard() {
+
+        Tile[][] newTiles = new Tile[length][length];
+
+        //populate tiles array
+        for (int row =0;row<length;row++) {
+            for (int col=0;col<length;col++) {
+                Tile oldTile = tiles[row][col];
+                Tile newTile = oldTile.copyTile();
+                newTiles[row][col] = newTile;
+            }
+        }
+
+        // create list of h and v tiles
+        ArrayList<Tile> new_h_tiles = new ArrayList<Tile>();
+        ArrayList<Tile> new_v_tiles = new ArrayList<Tile>();
+
+        for (Tile tile : h_tiles) {
+            new_h_tiles.add(tile);
+        }
+        for (Tile tile : v_tiles) {
+            new_v_tiles.add(tile);
+        }
+
+
+        // make the board
+        return new Board(newTiles, new_h_tiles, new_v_tiles);
+    }
+
+    public Board(Tile[][] tiles, ArrayList<Tile> h_tiles, ArrayList<Tile> v_tiles) {
+        this.tiles = tiles;
+        this.h_tiles = h_tiles;
+        this.v_tiles = v_tiles;
+        this.length = tiles.length;
+    }
+
     public ArrayList<Move> getAllMoves(String cell_type) {
         ArrayList<Move> moves = new ArrayList<Move>();
         ArrayList<Tile> playerTiles;
