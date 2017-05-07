@@ -78,6 +78,14 @@ public class Tile {
         return this.cellType;
     }
 
+    public int getX() {
+        return x;
+    }
+
+    public int getY() {
+        return y;
+    }
+
     @Override
     public String toString() {
         return cellType + " - Ctn: ("+x+","+y+"), Arr: ("+row+", "+col+")";

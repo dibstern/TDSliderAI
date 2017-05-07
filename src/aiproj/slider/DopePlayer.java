@@ -20,6 +20,9 @@ public class DopePlayer implements SliderPlayer {
     private String Opponent;
     private ArrayList<Move> movesPlayer;
     private ArrayList<Move> movesOpponent;
+    private ArrayList<Tile> playerTiles;
+    private ArrayList<Tile> opponentTiles;
+
 
     // Add more info to track here, for the Evaluation function
 
@@ -34,6 +37,7 @@ public class DopePlayer implements SliderPlayer {
      * control for this game ('H' = Horizontal, 'V' = Vertical)
      */
     public void init(int dimension, String board, char player) {
+
 
         // Assigning Player Pieces
         String playerType = Character.toString(player);
@@ -169,7 +173,94 @@ public class DopePlayer implements SliderPlayer {
         }
         Move firstMove = movesPlayer.get(0);
         update(firstMove);
+
+        //DEBUG
+        System.out.println("Board evaluation function (player "+ourPlayer+"): "+ evaluateBoard(curr_board));
+
         return firstMove;
+    }
+
+    private int evaluateBoard(Board board) {
+
+        int total = 0;
+
+        if (ourPlayer.equals(Tile.PLAYER_H)) {
+            this.playerTiles = board.getHTiles();
+            this.opponentTiles = board.getVTiles();
+
+        }
+        else  if (ourPlayer.equals(Tile.PLAYER_V)) {
+            this.playerTiles = board.getVTiles();
+            this.opponentTiles = board.getHTiles();
+        }
+        else {
+            System.out.println("Catastrophic error: incorrect player name");
+            System.exit(0);
+        }
+
+
+        //FEATURE DEFINITION
+
+
+        // playerTileDifference is preferable to having a separate number for each player tiles
+        // This is because the tile difference will perform better in machine learning (fewer, less
+        // noisy possible values)
+        int playerTileDifference = playerTiles.size() - opponentTiles.size();
+
+        // Sum the distances of each player
+        int sumPlayerDistances = sumDistances(playerTiles,  board.getLength());
+        int sumOpponentDistances = sumDistances(opponentTiles, board.getLength());
+
+
+
+        // Add all features to an arraylist and define weights
+        // Weights are presently +ve (good) or -ve (bad)
+        // Eventually we will define these elsewhere with Machine Learning
+
+
+        ArrayList<Integer> features = new ArrayList<Integer>();
+        ArrayList<Integer> featureWeights = new ArrayList<Integer>();
+        features.add(playerTileDifference);
+        featureWeights.add(-1);
+        features.add(sumPlayerDistances);
+        featureWeights.add(-1);
+        features.add(sumOpponentDistances);
+        featureWeights.add(1);
+
+
+        // Set up feature weights
+        // (dummy values all 1 or -1 - will change after machine learning is applied
+
+        // Sum total based on feature weights
+
+        for (int i=0; i<featureWeights.size();i++) {
+            total += featureWeights.get(i) * features.get(i);
+        }
+
+        return total;
+    }
+
+    private int sumDistances(ArrayList<Tile> tiles, int boardSize) {
+        int total = 0;
+
+        if (tiles.size() <1) {
+            return 0;
+        }
+
+        //Set the player type (assume all tiles passed in are the same player)
+        String player = tiles.get(0).getCellType();
+
+        for (Tile tile : tiles) {
+            if (player.equals(Tile.PLAYER_H)) {
+                total += boardSize-tile.getX();
+            }
+            else {
+                total += boardSize-tile.getY();
+            }
+        }
+
+
+        return total;
     }
 
     /* Getter Method for Board */

@@ -161,4 +161,14 @@ public class Board {
         System.out.println(currBoard);
     }
 
+
+    public ArrayList<Tile> getH_tiles() {
+        return h_tiles;
+    }
+
+    public ArrayList<Tile> getV_tiles() {
+        return v_tiles;
+    }
+
 }
+
