@@ -238,21 +238,27 @@ public class DopePlayer implements SliderPlayer {
             return null;
         }
 
+        int max = -100;
+        Move maxMove = moves.get(0);
         for (Move move : moves) {
             Board newBoard = board.copyBoard();
             modifyBoard(newBoard, move);
             //newBoard.boardDisplay();
-            int val = minimaxValue(board);
+            int val = minimaxValue(newBoard);
+            //System.out.println("^ val: "+ val+"\n");
+            if (val > max) {
+                max = val;
+                maxMove = move;
+            }
         }
-
-
-        return moves.get(0);
+        //System.out.println("BEST: "+ max);
+        return maxMove;
 
     }
 
     public int minimaxValue(Board board) {
 
-        return 0;
+        return evaluateBoard(board);
     }
 
     private Board modifyBoard(Board board, Move move) {
