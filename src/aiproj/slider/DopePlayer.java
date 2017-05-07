@@ -67,35 +67,8 @@ public class DopePlayer implements SliderPlayer {
      */
     public void update(Move move) {
 
-    if (move == null) {
-        return;
-    }
-
-    // Provided Move Implementation uses i as x and j as y
-    int fromX = move.i;
-    int fromY = move.j;
-    int toX = fromX;
-    int toY = fromY;
-
-    Tile fromTile = curr_board.getTile(fromX, fromY);
-    String cellType = fromTile.getCellType();
-
-    if (move.d == Move.Direction.LEFT) {
-        toX -= 1;
-    }
-    if (move.d == Move.Direction.RIGHT) {
-        toX += 1;
-    }
-    if (move.d == Move.Direction.UP) {
-        toY += 1;
-    }
-    if (move.d == Move.Direction.DOWN) {
-        toY -= 1;
-    }
-    updateTileArray(move);
-    curr_board.updateTile(toX, toY, cellType);
-    curr_board.updateTile(fromX, fromY, Tile.EMPTY);
-    refresh();
+        modifyBoard(curr_board,move);
+        refresh();
     }
 
 
@@ -108,55 +81,11 @@ public class DopePlayer implements SliderPlayer {
     }
 
     /**
-     * Updates the recorded array of tiles, given the new move
+     * Updates the recorded array of tiles of a board, given the new move
      * @param newMove A move object, played either by the player or by the opponent.
      */
-    private void updateTileArray(Move newMove) {
-        // Find new X and Y
-        int oldX = newMove.i;
-        int oldY = newMove.j;
-        Move.Direction direction = newMove.d;
 
-        int newX = (direction == Move.Direction.LEFT) ? (oldX - 1) : oldX;
-        newX = (direction == Move.Direction.RIGHT) ? (oldX + 1) : newX;
-
-        int newY = (direction == Move.Direction.UP) ? (oldY + 1) : oldY;
-        newY = (direction == Move.Direction.DOWN) ? (oldY - 1) : newY;
-
-        // Retrieve old tile, and its type
-        Tile oldTile = curr_board.getTile(oldX, oldY);
-        String tileType = oldTile.getCellType();
-
-        // Get Positional Indices for new tile
-        int[] newpos = curr_board.getPos(newX, newY);
-        int newRow = newpos[0];
-        int newCol = newpos[1];
-
-        // Use these to find New tile
-        Tile newtile = new Tile(tileType, newRow, newCol, boardsize);
-
-        // If h, remove old tile from h_tiles and add new tile to h_tiles
-        if (tileType.equals(Tile.PLAYER_H)) {
-            curr_board.removeHTile(curr_board.getTile(oldX, oldY));
-            if (validPos(newX, newY)) {
-                curr_board.addHTile(newtile);
-            }
-        }
-        // If V (updateTiles only called on non-null moves so can assume it's V if not H)
-        else if (tileType.equals(Tile.PLAYER_V)) {
-            curr_board.removeVTile(curr_board.getTile(oldX, oldY));
-            if (validPos(newX, newY)) {
-                curr_board.addVTile(newtile);
-            }
-        }
-    }
-
-
-    /**
-     * Same as updateTileArray except modifies any board passed in (not the current board)
-     * So can be used for any board
-     */
-    private void updateTileArray2(Board board, Move newMove) {
+    private void updateTileArray(Board board, Move newMove) {
         // Find new X and Y
         int oldX = newMove.i;
         int oldY = newMove.j;
@@ -183,14 +112,14 @@ public class DopePlayer implements SliderPlayer {
         // If h, remove old tile from h_tiles and add new tile to h_tiles
         if (tileType.equals(Tile.PLAYER_H)) {
             board.removeHTile(board.getTile(oldX, oldY));
-            if (validPos2(newX, newY, board)) {
+            if (validPos(newX, newY, board)) {
                 board.addHTile(newtile);
             }
         }
         // If V (updateTiles only called on non-null moves so can assume it's V if not H)
         else if (tileType.equals(Tile.PLAYER_V)) {
             board.removeVTile(board.getTile(oldX, oldY));
-            if (validPos2(newX, newY,board)) {
+            if (validPos(newX, newY,board)) {
                 board.addVTile(newtile);
             }
         }
@@ -312,7 +241,7 @@ public class DopePlayer implements SliderPlayer {
         for (Move move : moves) {
             Board newBoard = board.copyBoard();
             modifyBoard(newBoard, move);
-            newBoard.boardDisplay();
+            //newBoard.boardDisplay();
             int val = minimaxValue(board);
         }
 
@@ -354,7 +283,7 @@ public class DopePlayer implements SliderPlayer {
         if (move.d == Move.Direction.DOWN) {
             toY -= 1;
         }
-        updateTileArray2(board, move);
+        updateTileArray(board, move);
         board.updateTile(toX, toY, cellType);
         board.updateTile(fromX, fromY, Tile.EMPTY);
 
@@ -393,21 +322,15 @@ public class DopePlayer implements SliderPlayer {
         return Opponent;
     }
 
-    private Boolean validPos(int x, int y) {
-        if (x < boardsize && x >= 0 && boardsize-y-1 < boardsize && boardsize-y-1 >= 0) {
-            return true;
-        }
-        return false;
-    }
 
     /**
-     *  Same as validPos but takes a generic board not the current board
+     *  Returns true iff the given position of the given board is free
      * @param x
      * @param y
      * @param board
      * @return
      */
-    private Boolean validPos2(int x, int y, Board board) {
+    private Boolean validPos(int x, int y, Board board) {
         boardsize = board.getLength();
         if (x < boardsize && x >= 0 && boardsize-y-1 < boardsize && boardsize-y-1 >= 0) {
             return true;
