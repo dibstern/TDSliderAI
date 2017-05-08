@@ -10,8 +10,10 @@ import aiproj.slider.Move;
 
 import static aiproj.slider.Input.*;
 
-
-public class DopePlayer implements SliderPlayer {
+/**
+ *  Shit player is the same as dope player, except just looks 1 move ahead
+ */
+public class ShitPlayer implements SliderPlayer {
 
     // Keeping Track of the Board, Player Piece Types, Number of current legal moves
     private Board curr_board;
@@ -25,7 +27,7 @@ public class DopePlayer implements SliderPlayer {
     ArrayList<ArrayList<ArrayList<Integer>>> vals;
     // end debug
 
-    private static final int MAX_DEPTH = 6;
+    private static final int MAX_DEPTH = 1;
 
 
     // Add more info to track here, for the Evaluation function
