@@ -32,11 +32,11 @@ public final class Tester {
         //System.out.println(newgame.getOurPlayer() + " has " + newgame.getLegalMoveCountPlayer() + " possible moves.");
         //System.out.println(newgame.getOpponent() + " has " + newgame.getLegalMoveCountOpponent() + " possible moves.");
 
-        System.out.println(newgame.getOurPlayer() + "'s moves: ");
-        System.out.println(newgame.getMovesPlayer());
+        //System.out.println(newgame.getOurPlayer() + "'s moves: ");
+        //System.out.println(newgame.getMovesPlayer());
 
-        System.out.println(newgame.getOpponent() + "'s moves: ");
-        System.out.println(newgame.getMovesOpponent());
+        //System.out.println(newgame.getOpponent() + "'s moves: ");
+        //System.out.println(newgame.getMovesOpponent());
 
 
     }

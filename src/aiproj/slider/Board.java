@@ -21,6 +21,10 @@ public class Board {
     private int length;
     private ArrayList<Tile> h_tiles = new ArrayList();
     private ArrayList<Tile> v_tiles = new ArrayList();
+    private ArrayList<Move> movesPlayer = new ArrayList();
+    private ArrayList<Move> movesOpponent = new ArrayList();
+
+
 
     /**
      * Constructor for board.
@@ -204,6 +208,20 @@ public class Board {
 
     public ArrayList<Tile> getV_tiles() {
         return v_tiles;
+    }
+
+    public void setMovesPlayer(ArrayList<Move> moves) {
+        this.movesPlayer = moves;
+    }
+    public void setMovesOpponent(ArrayList<Move> moves) {
+        this.movesOpponent = moves;
+    }
+
+    public ArrayList<Move> getMovesPlayer() {
+        return this.movesPlayer;
+    }
+    public ArrayList<Move> getMovesOpponent() {
+        return this.movesOpponent;
     }
 
 }

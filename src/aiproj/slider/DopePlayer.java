@@ -18,10 +18,12 @@ public class DopePlayer implements SliderPlayer {
     private int boardsize;
     private String ourPlayer;
     private String Opponent;
-    private ArrayList<Move> movesPlayer;
-    private ArrayList<Move> movesOpponent;
+    //private ArrayList<Move> movesPlayer;
+    //private ArrayList<Move> movesOpponent;
     private ArrayList<Tile> playerTiles;
     private ArrayList<Tile> opponentTiles;
+
+    private static final int MAX_DEPTH = 4;
 
 
     // Add more info to track here, for the Evaluation function
@@ -51,7 +53,7 @@ public class DopePlayer implements SliderPlayer {
         boardsize = dimension;
 
         // Getting All Possible Moves
-        refresh();
+        refresh(curr_board);
     }
 
 
@@ -68,16 +70,16 @@ public class DopePlayer implements SliderPlayer {
     public void update(Move move) {
 
         modifyBoard(curr_board,move);
-        refresh();
+        refresh(curr_board);
     }
 
 
     /**
      * Refreshes variables about the board given its state and given which turn has been played
      */
-    private void refresh() {
-        movesPlayer = curr_board.getAllMoves(ourPlayer);
-        movesOpponent = curr_board.getAllMoves(Opponent);
+    private void refresh(Board board) {
+        board.setMovesPlayer(board.getAllMoves(ourPlayer));
+        board.setMovesOpponent(board.getAllMoves(Opponent));
     }
 
     /**
@@ -143,11 +145,11 @@ public class DopePlayer implements SliderPlayer {
      * at this point of the game, or null if there are no legal moves.
      */
     public Move move() {
-        if (movesPlayer.isEmpty()) {
+        if (curr_board.getMovesPlayer().isEmpty()) {
             return null;
         }
         //Move firstMove = movesPlayer.get(0);
-        Move firstMove = minimaxDecision(curr_board, movesPlayer);
+        Move firstMove = minimaxDecision(curr_board);
         update(firstMove);
 
         //DEBUG
@@ -231,34 +233,87 @@ public class DopePlayer implements SliderPlayer {
         return total;
     }
 
-    public Move minimaxDecision(Board board, ArrayList<Move> moves) {
+    public Move minimaxDecision(Board board) {
 
+        ArrayList<Move> moves = board.getMovesPlayer();
 
         if (moves.size() ==0) {
             return null;
         }
 
-        int max = -100;
+        int max = -999999;
         Move maxMove = moves.get(0);
         for (Move move : moves) {
             Board newBoard = board.copyBoard();
             modifyBoard(newBoard, move);
             //newBoard.boardDisplay();
-            int val = minimaxValue(newBoard);
+            int val = maxValue(newBoard,1);
             //System.out.println("^ val: "+ val+"\n");
             if (val > max) {
                 max = val;
                 maxMove = move;
             }
         }
-        //System.out.println("BEST: "+ max);
         return maxMove;
 
     }
 
-    public int minimaxValue(Board board) {
+    public int maxValue(Board board, int depth) {
 
-        return evaluateBoard(board);
+        ArrayList<Move> moves = board.getMovesPlayer();
+
+        if (terminalTest(depth) || moves.size()==0) {
+            return evaluateBoard(board);
+        }
+
+        int max = -999999;
+        for (Move move : moves) {
+            Board newBoard = board.copyBoard();
+            modifyBoard(newBoard, move);
+            int val = minValue(newBoard,depth+1);
+            if (val > max) {
+                max = val;
+            }
+        }
+        board.boardDisplay();
+        System.out.println("^^ MAX of this board : "+max+" (depth "+depth+") ^^");
+        System.out.println("");
+
+
+        return max;
+    }
+
+
+
+    public int minValue(Board board, int depth) {
+
+        ArrayList<Move> moves = board.getMovesOpponent();
+
+        if (terminalTest(depth) || moves.size()==0) {
+            return evaluateBoard(board);
+        }
+
+        int min = 999999;
+        for (Move move : moves) {
+            Board newBoard = board.copyBoard();
+            modifyBoard(newBoard, move);
+            int val = maxValue(newBoard,depth+1);
+            if (val < min) {
+                min = val;
+            }
+        }
+        board.boardDisplay();
+        System.out.println("^^ MIN of this board : "+min+" (depth "+depth+") ^^");
+        System.out.println("");
+
+        return min;
+    }
+
+    private boolean terminalTest(int depth) {
+        if (depth >= MAX_DEPTH) {
+            return true;
+        }
+        return false;
     }
 
     private Board modifyBoard(Board board, Move move) {
@@ -293,8 +348,7 @@ public class DopePlayer implements SliderPlayer {
         board.updateTile(toX, toY, cellType);
         board.updateTile(fromX, fromY, Tile.EMPTY);
 
-        // generic altering boards doesnt need a refresh
-        //refresh();
+        refresh(board);
 
         return board;
 
@@ -311,12 +365,22 @@ public class DopePlayer implements SliderPlayer {
     }
 
     /* Getter Method for legalMoveCountPlayer */
-    public ArrayList<Move> getMovesPlayer() { return movesPlayer; }
+    //public ArrayList<Move> getMovesPlayer() { return movesPlayer; }
 
     /* Getter Method for legalMoveCountPlayer */
-    public ArrayList<Move> getMovesOpponent() {
-        return movesOpponent;
+    //public ArrayList<Move> getMovesOpponent() {
+    //    return movesOpponent;
+    //}
+
+    /*
+    public ArrayList<Move> getMoves(String player) {
+
+        if (player.equals(Tile.PLAYER_H)) {
+            return hMoves;
+        }
+
     }
+    */
 
     /* Getter Method for ourPlayer */
     public String getOurPlayer() {
