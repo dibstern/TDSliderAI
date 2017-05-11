@@ -273,7 +273,7 @@ public class ShitPlayer implements SliderPlayer {
         }
         //debug
         vals.get(0).add(myVals);
-        System.out.println("max: "+max+ " from the following minimax tree:");
+        System.out.println(ourPlayer + " max: "+max+ " from the following minimax tree:");
         for (int i =0;i<vals.size();i++) {
             System.out.println("depth "+ i+ " : "+ vals.get(i));
         }

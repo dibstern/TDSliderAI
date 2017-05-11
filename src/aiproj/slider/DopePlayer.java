@@ -2,10 +2,12 @@ package aiproj.slider;
 
 import java.lang.Character;
 import java.util.ArrayList;
+import java.util.Hashtable;
 
 import static aiproj.slider.Input.*;
 import static java.lang.Math.max;
 import static java.lang.Math.min;
+import static java.lang.Math.tanh;
 
 
 public class DopePlayer implements SliderPlayer {
@@ -23,8 +25,7 @@ public class DopePlayer implements SliderPlayer {
     ArrayList<ArrayList<ArrayList<Double>>> vals;
     // end debug
 
-    private static final int MAX_DEPTH = 8;
-
+    private static final int MAX_DEPTH = 7;
 
     // Add more info to track here, for the Evaluation function
 
@@ -159,7 +160,7 @@ public class DopePlayer implements SliderPlayer {
         return firstMove;
     }
 
-    private int evaluateBoard(Board board) {
+    private double evaluateBoard(Board board) {
 
         // Set list of tiles based on who the player is
         if (ourPlayer.equals(Tile.PLAYER_H)) {
@@ -183,36 +184,73 @@ public class DopePlayer implements SliderPlayer {
         // playerTileDifference is preferable to having a separate number for each player tiles
         // This is because the tile difference will perform better in machine learning (fewer, less
         // noisy possible values)
-        int playerTileDifference = playerTiles.size() - opponentTiles.size();
+        double playerTileDifference = playerTiles.size() - opponentTiles.size();
 
         // Sum the distances of each player
-        int sumPlayerDistances = sumDistances(playerTiles,  board.getLength());
-        int sumOpponentDistances = sumDistances(opponentTiles, board.getLength());
+        double sumPlayerDistances = sumDistances(playerTiles,  board.getLength());
+        double sumOpponentDistances = sumDistances(opponentTiles, board.getLength());
+
+        // The end state of the game should be properly evaluated by the evaluation function.
+        if (opponentTiles.size() == 0) {
+            return -1;
+        }
+        if (playerTiles.size() == 0) {
+            return 1;
+        }
+
+        // Maximise possible forward moves for player, minimise for opponent
+        double forwardMovesOpponent = forwardMoves(board.getMovesOpponent(), Opponent);
+        double forwardMovesPlayer = forwardMoves(board.getMovesPlayer(), ourPlayer);
 
         // Add all features to an arraylist and define weights
         // Weights are presently +ve (good) or -ve (bad)
         // Eventually we will define these elsewhere with Machine Learning
 
-        ArrayList<Integer> features = new ArrayList<Integer>();
-        ArrayList<Integer> featureWeights = new ArrayList<Integer>();
+        ArrayList<Double> features = new ArrayList<Double>();
+        ArrayList<Double> featureWeights = new ArrayList<Double>();
         features.add(playerTileDifference);
-        featureWeights.add(-1);
+        featureWeights.add(-0.9);
         features.add(sumPlayerDistances);
-        featureWeights.add(-1);
+        featureWeights.add(-1.0);
         features.add(sumOpponentDistances);
-        featureWeights.add(1);
+        featureWeights.add(1.0);
+
+        // Added Forward Moves -> Players were starting out by choosing the first possible move (moves.get(0))
+        features.add(forwardMovesPlayer);
+        featureWeights.add(0.5);
+        features.add(forwardMovesOpponent);
+        featureWeights.add(-0.5);
 
         // Sum total based on feature weights
 
-        int total = 0;
+        double total = 0;
         for (int i=0; i<featureWeights.size();i++) {
             total += featureWeights.get(i) * features.get(i);
+        }
+        // Squashes Evaluation function to between -1 and 1, and the .2 allows for the high feature weights.
+        return tanh(total*.1);
+    }
+
+
+    private double forwardMoves(ArrayList<Move> moves, String player) {
+        if (moves.size() <1) {
+            return 0;
+        }
+        double total = 0;
+        for (Move move : moves) {
+            if (player.equals(Tile.PLAYER_H)) {
+                total += (move.d == Move.Direction.RIGHT) ? 1 : 0;
+            }
+            else {
+                total += (move.d == Move.Direction.UP) ? 1 : 0;
+            }
         }
         return total;
     }
 
-    private int sumDistances(ArrayList<Tile> tiles, int boardSize) {
-        int total = 0;
+
+    private double sumDistances(ArrayList<Tile> tiles, int boardSize) {
+        double total = 0;
 
         if (tiles.size() <1) {
             return 0;
@@ -233,6 +271,7 @@ public class DopePlayer implements SliderPlayer {
 
         return total;
     }
+
 
     public Move minimaxDecision(Board board) {
 
@@ -255,9 +294,9 @@ public class DopePlayer implements SliderPlayer {
             modifyBoard(newBoard, move);
 
             double val = minValue(newBoard,1, Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY);
-
             //debug
             if (debug) {
+                System.out.println(move.toString() + " = val: " + val);
                 myVals.add(val);
             }
             // end debug
@@ -270,7 +309,7 @@ public class DopePlayer implements SliderPlayer {
         //debug
         if (debug) {
             vals.get(0).add(myVals);
-            System.out.println("max: " + max + " from the following minimax tree:");
+            System.out.println("DopePlayer " + ourPlayer + " max: " + max + " from the following minimax tree:");
             for (int i = 0; i < vals.size(); i++) {
                 System.out.println("depth " + i + " : " + vals.get(i));}}
         // end debug
@@ -282,7 +321,7 @@ public class DopePlayer implements SliderPlayer {
 
         ArrayList<Move> moves = board.getMovesPlayer();
 
-        if (terminalTest(depth) || moves.size()==0) {
+        if (terminalTest(depth) || moves.size() == 0) {
             return evaluateBoard(board);
         }
         //debug
@@ -290,12 +329,15 @@ public class DopePlayer implements SliderPlayer {
         // end debug
 
         double value = Double.NEGATIVE_INFINITY;
+        Board newBoard = null;
         for (Move move : moves) {
-            Board newBoard = board.copyBoard();
+            newBoard = board.copyBoard();
             modifyBoard(newBoard, move);
-            value = max(value, minValue(newBoard,depth+1, alpha, beta));
+            value = max(value, minValue(newBoard, depth + 1, alpha, beta));
             //debug
-            if (debug) {myVals.add(value);}
+            if (debug) {
+                myVals.add(value);
+            }
             // end debug
             if (value >= beta) {
                 return value;
@@ -306,7 +348,6 @@ public class DopePlayer implements SliderPlayer {
         //debug
         if (debug) vals.get(depth).add(myVals);
         // end debug
-
         return value;
     }
 
@@ -316,7 +357,7 @@ public class DopePlayer implements SliderPlayer {
 
         ArrayList<Move> moves = board.getMovesOpponent();
 
-        if (terminalTest(depth) || moves.size()==0) {
+        if (terminalTest(depth) || moves.size() == 0) {
             return evaluateBoard(board);
         }
 
@@ -326,10 +367,11 @@ public class DopePlayer implements SliderPlayer {
 
 
         double value = Double.POSITIVE_INFINITY;
+        Board newBoard = null;
         for (Move move : moves) {
-            Board newBoard = board.copyBoard();
+            newBoard = board.copyBoard();
             modifyBoard(newBoard, move);
-            value = min(value, maxValue(newBoard,depth+1, alpha, beta));
+            value = min(value, maxValue(newBoard, depth + 1, alpha, beta));
             //debug
             if (debug) myVals.add(value);
             // end debug
@@ -340,12 +382,24 @@ public class DopePlayer implements SliderPlayer {
         }
 
         //debug
-        if (debug) {vals.get(depth).add(myVals);}
+        if (debug) {
+            vals.get(depth).add(myVals);
+        }
         // end debug
-
 
         return value;
     }
+/*
+    private void updatePrevMinStates(Board newBoard, double value) {
+        if (!previous_min_states.containsKey(newBoard)) {
+            previous_min_states.put(newBoard, value);
+        }
+    }
+    private void updatePrevMaxStates(Board newBoard, double value) {
+        if (!previous_max_states.containsKey(newBoard)) {
+            previous_max_states.put(newBoard, value);
+        }
+    }*/
 
     private boolean terminalTest(int depth) {
         if (depth >= MAX_DEPTH) {
@@ -355,7 +409,6 @@ public class DopePlayer implements SliderPlayer {
     }
 
     private Board modifyBoard(Board board, Move move) {
-
 
         if (move == null) {
             return board;
@@ -389,8 +442,6 @@ public class DopePlayer implements SliderPlayer {
         refresh(board);
 
         return board;
-
-
 
     }
 
