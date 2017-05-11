@@ -59,7 +59,6 @@ public class Board {
             new_v_tiles.add(tile);
         }
 
-
         // make the board
         return new Board(newTiles, new_h_tiles, new_v_tiles);
     }

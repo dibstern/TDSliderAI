@@ -1,14 +1,11 @@
 package aiproj.slider;
 
-import aiproj.slider.Tile;
-import aiproj.slider.Board;
-import aiproj.slider.Input;
 import java.lang.Character;
 import java.util.ArrayList;
-import java.util.List;
-import aiproj.slider.Move;
 
 import static aiproj.slider.Input.*;
+import static java.lang.Math.max;
+import static java.lang.Math.min;
 
 
 public class DopePlayer implements SliderPlayer {
@@ -22,10 +19,11 @@ public class DopePlayer implements SliderPlayer {
     private ArrayList<Tile> opponentTiles;
 
     // debug
-    ArrayList<ArrayList<ArrayList<Integer>>> vals;
+    private static final Boolean debug = false;
+    ArrayList<ArrayList<ArrayList<Double>>> vals;
     // end debug
 
-    private static final int MAX_DEPTH = 6;
+    private static final int MAX_DEPTH = 8;
 
 
     // Add more info to track here, for the Evaluation function
@@ -169,7 +167,7 @@ public class DopePlayer implements SliderPlayer {
             this.opponentTiles = board.getVTiles();
 
         }
-        else  if (ourPlayer.equals(Tile.PLAYER_V)) {
+        else if (ourPlayer.equals(Tile.PLAYER_V)) {
             this.playerTiles = board.getVTiles();
             this.opponentTiles = board.getHTiles();
         }
@@ -240,28 +238,28 @@ public class DopePlayer implements SliderPlayer {
 
         ArrayList<Move> moves = board.getMovesPlayer();
 
-        if (moves.size() ==0) {
+        if (moves.size() == 0) {
             return null;
         }
 
-        // debug
-        vals = new ArrayList<ArrayList<ArrayList<Integer>>>();
-        for (int i =0;i< MAX_DEPTH;i++) {
-            vals.add(new ArrayList<ArrayList<Integer>>());
-        }
-        ArrayList<Integer> myVals = new ArrayList<Integer>();
+        // debug  -> Cannot put inside an if-statement.
+        vals = new ArrayList<ArrayList<ArrayList<Double>>>();
+        for (int i = 0; i < MAX_DEPTH; i++) {vals.add(new ArrayList<ArrayList<Double>>());}
+        ArrayList<Double> myVals = new ArrayList<Double>();
         // end debug
 
-        int max = -999999;
+        double max = Double.NEGATIVE_INFINITY;
         Move maxMove = moves.get(0);
         for (Move move : moves) {
             Board newBoard = board.copyBoard();
             modifyBoard(newBoard, move);
 
-            int val = minValue(newBoard,1);
+            double val = minValue(newBoard,1, Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY);
 
             //debug
-            myVals.add(val);
+            if (debug) {
+                myVals.add(val);
+            }
             // end debug
 
             if (val > max) {
@@ -270,17 +268,17 @@ public class DopePlayer implements SliderPlayer {
             }
         }
         //debug
-        vals.get(0).add(myVals);
-        System.out.println("max: "+max+ " from the following minimax tree:");
-        for (int i =0;i<vals.size();i++) {
-            System.out.println("depth "+ i+ " : "+ vals.get(i));
-        }
+        if (debug) {
+            vals.get(0).add(myVals);
+            System.out.println("max: " + max + " from the following minimax tree:");
+            for (int i = 0; i < vals.size(); i++) {
+                System.out.println("depth " + i + " : " + vals.get(i));}}
         // end debug
         return maxMove;
 
     }
 
-    public int maxValue(Board board, int depth) {
+    public double maxValue(Board board, int depth, double alpha, double beta) {
 
         ArrayList<Move> moves = board.getMovesPlayer();
 
@@ -288,37 +286,33 @@ public class DopePlayer implements SliderPlayer {
             return evaluateBoard(board);
         }
         //debug
-        ArrayList<Integer> myVals = new ArrayList<Integer>();
+        ArrayList<Double> myVals = new ArrayList<Double>();
         // end debug
 
-        int max = -999999;
+        double value = Double.NEGATIVE_INFINITY;
         for (Move move : moves) {
             Board newBoard = board.copyBoard();
             modifyBoard(newBoard, move);
-            int val = minValue(newBoard,depth+1);
-
+            value = max(value, minValue(newBoard,depth+1, alpha, beta));
             //debug
-            myVals.add(val);
+            if (debug) {myVals.add(value);}
             // end debug
-
-
-            if (val > max) {
-                max = val;
+            if (value >= beta) {
+                return value;
             }
+            alpha = max(alpha, value);
         }
 
-
         //debug
-        vals.get(depth).add(myVals);
+        if (debug) vals.get(depth).add(myVals);
         // end debug
 
-
-        return max;
+        return value;
     }
 
 
 
-    public int minValue(Board board, int depth) {
+    public double minValue(Board board, int depth, double alpha, double beta) {
 
         ArrayList<Move> moves = board.getMovesOpponent();
 
@@ -327,32 +321,30 @@ public class DopePlayer implements SliderPlayer {
         }
 
         //debug
-        ArrayList<Integer> myVals = new ArrayList<Integer>();
+        ArrayList<Double> myVals = new ArrayList<Double>();
         // end debug
 
 
-        int min = 999999;
+        double value = Double.POSITIVE_INFINITY;
         for (Move move : moves) {
             Board newBoard = board.copyBoard();
             modifyBoard(newBoard, move);
-            int val = maxValue(newBoard,depth+1);
-
-
+            value = min(value, maxValue(newBoard,depth+1, alpha, beta));
             //debug
-            myVals.add(val);
+            if (debug) myVals.add(value);
             // end debug
-
-            if (val < min) {
-                min = val;
+            if (value <= alpha) {
+                return value;
             }
+            beta = min(beta, value);
         }
 
         //debug
-        vals.get(depth).add(myVals);
+        if (debug) {vals.get(depth).add(myVals);}
         // end debug
 
 
-        return min;
+        return value;
     }
 
     private boolean terminalTest(int depth) {
