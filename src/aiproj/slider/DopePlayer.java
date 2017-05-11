@@ -2,7 +2,6 @@ package aiproj.slider;
 
 import java.lang.Character;
 import java.util.ArrayList;
-import java.util.Hashtable;
 
 import static aiproj.slider.Input.*;
 import static java.lang.Math.max;
