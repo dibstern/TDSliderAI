@@ -38,7 +38,7 @@ public class TDPlayer implements SliderPlayer {
     private static final double ALPHA = 1.0;
     private static final double SHRINK_FACTOR = 1.0;  // 0.01;
     private static final double LAMBDA = 0.75;
-    private static final String WEIGHTS_FILE = "weights.txt"
+    private static final String WEIGHTS_FILE = "weights.txt";
     private ArrayList<PrincipalVariation> principalVariations = new ArrayList<PrincipalVariation>();
     private Boolean incomplete;
 
@@ -212,6 +212,8 @@ public class TDPlayer implements SliderPlayer {
     // Get Referee to try to call player.tdLeaf();
 
     public void tdLeaf() {
+        // Read in the weights file
+        weights = readWeightFile();
 
         // Calculate sumdiff arraylist for each weight, so it can be re-used for each weight
         ArrayList<Double> sumdiffs = new ArrayList<Double>();
@@ -223,6 +225,7 @@ public class TDPlayer implements SliderPlayer {
         for (int i = 0; i < weights.size(); i++) {
             weights.set(i, weights.get(i) + ALPHA*(updateVal(i, sumdiffs)));
         }
+        updateWeightFile(weights);
     }
 
 
