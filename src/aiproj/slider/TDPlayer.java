@@ -11,6 +11,8 @@ import static java.lang.Math.min;
 import static java.lang.Math.tanh;
 import static java.lang.Math.abs;
 import static java.lang.Math.pow;
+import java.io.FileReader;
+import java.io.FileWriter;
 
 
 public class TDPlayer implements SliderPlayer {
@@ -36,6 +38,7 @@ public class TDPlayer implements SliderPlayer {
     private static final double ALPHA = 1.0;
     private static final double SHRINK_FACTOR = 1.0;  // 0.01;
     private static final double LAMBDA = 0.75;
+    private static final String WEIGHTS_FILE = "weights.txt"
     private ArrayList<PrincipalVariation> principalVariations = new ArrayList<PrincipalVariation>();
     private Boolean incomplete;
 
@@ -84,6 +87,56 @@ public class TDPlayer implements SliderPlayer {
         // Initialising the move counter to 0
         movecount = 0;
     }
+
+
+    private ArrayList<Double> readWeightFile() {
+
+        FileReader in=null;
+        String s = "";
+
+        try {
+            in = new FileReader(WEIGHTS_FILE);
+            int c;
+            while ((c = in.read()) != -1) {
+                //System.out.println((char)c);
+                s = s + (char) c;
+            }
+            String[] weightsString = s.split(" ");
+            for (int i = 0; i < weightsString.length; i++) {
+                weights.set(i, Double.parseDouble(weightsString[i]));
+            }
+            in.close();
+        }
+        catch ( Exception e) {
+            System.out.println("FILE READ FAIL");
+            System.exit(0);
+        }
+
+        return weights;
+    }
+
+    private void updateWeightFile(ArrayList<Double> weights) {
+
+        FileWriter out=null;
+        String s = "";
+
+        try {
+            out = new FileWriter(WEIGHTS_FILE);
+
+            for (int i =0;i<weights.size();i++) {
+                s += Double.toString(weights.get(i));
+                s+= " ";
+            }
+            out.write(s);
+            out.close();
+
+        }
+        catch ( Exception e) {
+            System.out.println("FILE READ FAIL");
+            System.exit(0);
+        }
+    }
+
 
 
 
