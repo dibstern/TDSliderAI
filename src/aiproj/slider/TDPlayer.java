@@ -24,15 +24,15 @@ public class TDPlayer implements SliderPlayer {
     private String Opponent;
     private ArrayList<Tile> playerTiles = new ArrayList<Tile>();
     private ArrayList<Tile> opponentTiles = new ArrayList<Tile>();
-
-    private ArrayList<Double> weights = new ArrayList<Double>(Arrays.asList(-0.9, 1.0, 1.0));
+    private double movecount;
+    private ArrayList<Double> weights = new ArrayList<Double>(Arrays.asList(-1.0, 1.0, -1.0, 1.0, 0.5, -0.5, 1.0));
 
     // debug
     private static final Boolean debug = false;
     private ArrayList<ArrayList<ArrayList<Double>>> vals;
     // end debug
 
-    private static final int MAX_DEPTH = 5;
+    private static final int MAX_DEPTH = 6;
 
     // For TDLeaf(Lambda)
     private static final double ALPHA = 1.0;
@@ -41,11 +41,6 @@ public class TDPlayer implements SliderPlayer {
     private static final String WEIGHTS_FILE = "weights.txt";
     private ArrayList<PrincipalVariation> principalVariations = new ArrayList<PrincipalVariation>();
     private Boolean incomplete;
-
-    private int movecount;                      // the N in TDLeaf(Lambda)
-    //private ArrayList<Board> positions = new ArrayList<Board>();
-    //private static final double EPS = 0.05;
-    //private static final int MAX_ITERATIONS = 200;
 
     // Learn Weights w/ TDLeaf?
     private static final Boolean td = true;
@@ -85,7 +80,7 @@ public class TDPlayer implements SliderPlayer {
         incomplete = true;
 
         // Initialising the move counter to 0
-        movecount = 0;
+        movecount = 0.0;
     }
 
 
@@ -161,6 +156,7 @@ public class TDPlayer implements SliderPlayer {
             System.out.println(weights);
             incomplete = false;
         }
+        System.out.printf("Player Tiles = %d, Opponent Tiles = %d\n", playerTiles.size(), opponentTiles.size());
     }
 
     /**
@@ -183,7 +179,6 @@ public class TDPlayer implements SliderPlayer {
         if (curr_board.getMovesPlayer().isEmpty()) {
             return null;
         }
-        //Move firstMove = movesPlayer.get(0);
         Move firstMove = minimaxDecision(curr_board);
         update(firstMove);
 
@@ -208,10 +203,8 @@ public class TDPlayer implements SliderPlayer {
     // http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.140.1523&rep=rep1&type=pdf
     // ------------------------------
 
-
-    // Get Referee to try to call player.tdLeaf();
-
     public void tdLeaf() {
+
         // Read in the weights file
         weights = readWeightFile();
 
@@ -220,7 +213,6 @@ public class TDPlayer implements SliderPlayer {
         for (int t = 0; t < principalVariations.size() - 1; t++) {
             sumdiffs.add(sumDiff(t));
         }
-
         // For each weight i
         for (int i = 0; i < weights.size(); i++) {
             weights.set(i, weights.get(i) + ALPHA*(updateVal(i, sumdiffs)));
@@ -235,6 +227,8 @@ public class TDPlayer implements SliderPlayer {
         // For each time t
         for (int t = 0; t < principalVariations.size() - 1; t++) {
             ArrayList<Double> features = principalVariations.get(t).getFeatures();
+            // Added movecount as a multiplier to all features, and as a feature itself, so that the impact of
+            // different features can change over the course of a game
             sum += features.get(i) * sumdiffs.get(t);
         }
         return sum;
@@ -245,6 +239,8 @@ public class TDPlayer implements SliderPlayer {
     private double sumDiff(int t) {
         double sum_diff = 0;
         for (int j = t; j < principalVariations.size() - 1; j++) {
+            // Takes the minimum of the temporal difference and 0, so that increased temporal differences (the
+            // opponent making a sub-optimal move, by our estimation) are not included in the training
             sum_diff += pow(LAMBDA, j-t) * tempDiff(t);
         }
         return sum_diff;
@@ -344,33 +340,26 @@ public class TDPlayer implements SliderPlayer {
             System.out.println("Catastrophic error: incorrect player name");
             System.exit(0);
         }
-        double playerTileDifference = playerTiles.size() - opponentTiles.size();
 
         // Need our features to be of a relatively consistent size across the game, so as to not distort the weights
         // Maximise the opponent's distances, minimise our own distances; positive weight
-        double dist_advantage = sumDistances(opponentTiles, boardsize) - sumDistances(playerTiles,  boardsize);
-        //double sumPlayerDistances = sumDistances(playerTiles,  board.getLength());
-        //double sumOpponentDistances = sumDistances(opponentTiles, board.getLength());
+        double sumPlayerDistances = sumDistances(playerTiles,  board.getLength());
+        double sumOpponentDistances = sumDistances(opponentTiles, board.getLength());
 
         // Added Forward Moves -> Players were starting out by choosing the first possible move (moves.get(0))
         // Maximise possible forward moves for player, minimise for opponent
+        double forwardMovesOpp = (forwardMoves(board.getMovesOpponent(), Opponent)/opponentTiles.size())*(boardsize-1);
+        double forwardMovesPla = (forwardMoves(board.getMovesPlayer(), ourPlayer)/playerTiles.size())*(boardsize-1);
 
-        double forwardMovesOpponent = forwardMoves(board.getMovesOpponent(), Opponent);
-        double forwardMovesPlayer = forwardMoves(board.getMovesPlayer(), ourPlayer);
-
-        // Maximise our forward moves in relation to number of pieces, minimise Opponent forward moves irt num pieces
-        // Positive Weight (If we have more forward moves and this is positive, that's good)
-        double forwardAdv = (forwardMovesPlayer / playerTiles.size()) - (forwardMovesOpponent / opponentTiles.size());
-        forwardAdv *= boardsize - 1;
         // Add all features to an ArrayList
         ArrayList<Double> features = new ArrayList<Double>();
-        features.add(playerTileDifference);       // -0.9
-        //features.add(sumPlayerDistances);                      // -1.0
-        //features.add(sumOpponentDistances);                    // 1.0
-        features.add(dist_advantage);             // 1.0
-        features.add(forwardAdv);                 // 0.5
-        //features.add(forwardMovesPlayer);                     // 0.5
-        //features.add(forwardMovesOpponent);                     // -0.5
+        features.add(playerTiles.size()*1.0);            // -1.0
+        features.add(opponentTiles.size()*1.0);          //  1.0
+        features.add(sumPlayerDistances);           // -1.0
+        features.add(sumOpponentDistances);         //  1.0
+        features.add(forwardMovesPla);              //  0.5
+        features.add(forwardMovesOpp);              // -0.5
+        //features.add(movecount);                                //  1.0
         return features;
     }
 
@@ -666,7 +655,7 @@ public class TDPlayer implements SliderPlayer {
         return false;
     }
 
-    public int getMoveCount() {
+    public double getMoveCount() {
         return movecount;
     }
 
