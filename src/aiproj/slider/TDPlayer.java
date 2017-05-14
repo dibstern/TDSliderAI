@@ -35,8 +35,8 @@ public class TDPlayer implements SliderPlayer {
     private static final int MAX_DEPTH = 6;
 
     // For TDLeaf(Lambda)
-    private static final double ALPHA = 1.0;
-    private static final double SHRINK_FACTOR = 1.0;  // 0.01;
+    private static final double ALPHA = 0.3;
+    private static final double SHRINK_FACTOR = 0.2;  // 0.01;
     private static final double LAMBDA = 0.75;
     private static final String WEIGHTS_FILE = "weights.txt";
     private ArrayList<PrincipalVariation> principalVariations = new ArrayList<PrincipalVariation>();
