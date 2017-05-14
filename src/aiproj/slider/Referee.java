@@ -93,7 +93,8 @@ public class Referee {
             render(board);
 
         }
-        
+        // Added this
+        players[0].update(previousMove);
 
         /* * * *
          * game over! finally, display the results

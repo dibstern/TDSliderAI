@@ -24,7 +24,7 @@ public class DopePlayer implements SliderPlayer {
     ArrayList<ArrayList<ArrayList<Double>>> vals;
     // end debug
 
-    private static final int MAX_DEPTH = 7;
+    private static final int MAX_DEPTH = 6;
 
     // Add more info to track here, for the Evaluation function
 
@@ -155,6 +155,7 @@ public class DopePlayer implements SliderPlayer {
         //DEBUG
         //System.out.println("Board evaluation function (player "+ourPlayer+"): "+ evaluateBoard(curr_board));
         // end debug
+
 
         return firstMove;
     }
