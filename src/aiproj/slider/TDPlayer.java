@@ -26,25 +26,25 @@ public class TDPlayer implements SliderPlayer {
     private ArrayList<Tile> opponentTiles = new ArrayList<Tile>();
     private double movecount;
     private ArrayList<Double> weights;// = new ArrayList<Double>(Arrays.asList(-1.0, 1.0, -1.0, 1.0, 0.5, -0.5))
-
-    // debug
-    private static final Boolean debug = true;
-    private ArrayList<ArrayList<ArrayList<Double>>> vals;
-    // end debug
-
-    private static final int MAX_DEPTH = 5;
+    private static final int MAX_DEPTH = 6;
 
     // For TDLeaf(Lambda)
-    private static final double ALPHA = 0.3;
+    private static final double ALPHA = 0.1;
     private static final double SHRINK_FACTOR = 0.2;  // 0.01;
-    private static final double LAMBDA = 0.75;
+    // Higher when untrained -> from 0.5 to 0.7 only when more reliable
+    private static final double LAMBDA = 0.98;
     private static final String WEIGHTS_FILE = "weights.txt";
     private ArrayList<PrincipalVariation> principalVariations = new ArrayList<PrincipalVariation>();
     private Boolean incomplete;
 
     // Learn Weights w/ TDLeaf?
-    private static final Boolean td = false;//true;
+    private static final Boolean td = true;//true;
+    private static final Boolean makeupdates = false;
 
+    // Debug?
+    private static final Boolean debug = true;
+    private ArrayList<ArrayList<ArrayList<Double>>> vals;
+    // end debug
 
     // Add more info to track here, for the Evaluation function
 
@@ -87,20 +87,20 @@ public class TDPlayer implements SliderPlayer {
 
     private ArrayList<Double> readWeightFile() {
 
-        FileReader in=null;
-        String s = "";
-        ArrayList<Double> w = new ArrayList<Double>();
+        FileReader in = null;
+        String str = "";
+        ArrayList<Double> file_weights = new ArrayList<Double>();
 
         try {
             in = new FileReader(WEIGHTS_FILE);
-            int c;
-            while ((c = in.read()) != -1) {
+            int chr;
+            while ((chr = in.read()) != -1) {
                 //System.out.println((char)c);
-                s = s + (char) c;
+                str = str + (char) chr;
             }
-            String[] weightsString = s.split(" ");
+            String[] weightsString = str.split(" ");
             for (int i = 0; i < weightsString.length; i++) {
-                w.add(Double.parseDouble(weightsString[i]));
+                file_weights.add(Double.parseDouble(weightsString[i]));
             }
             in.close();
         }
@@ -109,22 +109,22 @@ public class TDPlayer implements SliderPlayer {
             System.exit(0);
         }
 
-        return w;
+        return file_weights;
     }
 
     private void updateWeightFile(ArrayList<Double> weights) {
 
-        FileWriter out=null;
-        String s = "";
+        FileWriter out = null;
+        String str = "";
 
         try {
             out = new FileWriter(WEIGHTS_FILE);
 
-            for (int i =0;i<weights.size();i++) {
-                s += Double.toString(weights.get(i));
-                s+= " ";
+            for (int i = 0; i < weights.size(); i++) {
+                str += Double.toString(weights.get(i));
+                str += " ";
             }
-            out.write(s);
+            out.write(str);
             out.close();
 
         }
@@ -214,11 +214,14 @@ public class TDPlayer implements SliderPlayer {
         for (int t = 0; t < principalVariations.size() - 1; t++) {
             sumdiffs.add(sumDiff(t));
         }
+
         // For each weight i
         for (int i = 0; i < weights.size(); i++) {
-            weights.set(i, weights.get(i) + ALPHA*(updateVal(i, sumdiffs)));
+            double weight_update = ALPHA*(updateVal(i, sumdiffs));
+            System.out.printf("Update Weight %d: + %f\n", i+1, weight_update);
+            weights.set(i, weights.get(i) + weight_update);
         }
-        updateWeightFile(weights);
+        if (makeupdates) updateWeightFile(weights);
     }
 
 
@@ -244,10 +247,15 @@ public class TDPlayer implements SliderPlayer {
     // Calculates the sum of the temporal differences, as modulated by LAMBDA
     private double sumDiff(int t) {
         double sum_diff = 0;
+        ArrayList<Double> tempdifferences = new ArrayList<Double>();
+        for (int j = t; j < principalVariations.size() - 1; j++) {
+            tempdifferences.add(tempDiff(j));
+        }
+        System.out.println(tempdifferences);
         for (int j = t; j < principalVariations.size() - 1; j++) {
             // Takes the minimum of the temporal difference and 0, so that increased temporal differences (the
             // opponent making a sub-optimal move, by our estimation) are not included in the training
-            sum_diff += pow(LAMBDA, j-t) * tempDiff(t);
+            sum_diff += pow(LAMBDA, j-t) * tempdifferences.get(j-t);
         }
         return sum_diff;
     }
@@ -290,26 +298,37 @@ public class TDPlayer implements SliderPlayer {
 
     public ArrayList<Double> evalFeatures(Board board) {
 
+        // Feature 1
         double playerTileDifference = playerTiles.size() - opponentTiles.size();
 
+        // Feature 2
         // Maximise the opponent's distances, minimise our own distances
         double sumPlayerDistances = sumDistances(playerTiles,  board.getLength());
         double sumOpponentDistances = sumDistances(opponentTiles, board.getLength());
 
+        // Feature 3
         // Added Forward Moves -> Players were starting out by choosing the first possible move (moves.get(0))
         // Maximise possible forward moves for player, minimise for opponent
         double forwardMovesOpp = (forwardMoves(board.getMovesOpponent(), Opponent)/opponentTiles.size())*(boardsize-1);
         double forwardMovesPla = (forwardMoves(board.getMovesPlayer(), ourPlayer)/playerTiles.size())*(boardsize-1);
+        //double forwardAdv = forwardMovesPla - forwardMovesOpp;
+
+        // Feature 4
+        // If H: Sum of, for each H tile, Number of V tiles with an x, y that are both lower than that tile?
+        // If V: Sum of, for each V tile, Number of V tiles with an x, y that are both lower than that tile?
+
 
         // Add all features to an ArrayList
         ArrayList<Double> features = new ArrayList<Double>();
 
-        features.add(playerTileDifference);         // -1.0
-        features.add(sumPlayerDistances);           // -1.0
-        features.add(sumOpponentDistances);         //  1.0
-        features.add(forwardMovesPla);              //  0.5
-        features.add(forwardMovesOpp);              // -0.5
-        //features.add(movecount);                                //  1.0
+        features.add(playerTileDifference);                        // -1.0
+        features.add(sumOpponentDistances - sumPlayerDistances);   //  1.0
+        features.add(forwardMovesPla - forwardMovesOpp);           // -0.5
+        //features.add(sumPlayerDistances);                        // -1.0
+        //features.add(sumOpponentDistances);                      //  1.0
+        //features.add(forwardMovesPla);                           //  0.5
+        //features.add(forwardMovesOpp);                           // -0.5
+        //features.add(movecount);                                 //  1.0
         return features;
     }
 
@@ -408,10 +427,11 @@ public class TDPlayer implements SliderPlayer {
 
         if (debug) {
             vals.get(0).add(myVals);
+            /*
             System.out.println("TDPlayer " + ourPlayer + " max: " + maxVal + " from the following minimax tree:");
 
             for (int i = 0; i < vals.size(); i++) {
-                System.out.println("depth " + i + " : " + vals.get(i));}
+                System.out.println("depth " + i + " : " + vals.get(i));}*/
         }
         // end debug
         return maxMove;
