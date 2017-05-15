@@ -43,7 +43,7 @@ public class TDPlayer implements SliderPlayer {
     private Boolean incomplete;
 
     // Learn Weights w/ TDLeaf?
-    private static final Boolean td = true;
+    private static final Boolean td = false;//true;
 
 
     // Add more info to track here, for the Evaluation function
@@ -154,8 +154,10 @@ public class TDPlayer implements SliderPlayer {
         // Start TDLeaf if the game has ended!
         //System.out.printf("After updating, H Tiles = %d, V tiles = %d\n", curr_board.getH_tiles().size(), curr_board.getV_tiles().size());
         if (incomplete && (curr_board.getH_tiles().size() == 0 || curr_board.getV_tiles().size() == 0)) {
-            tdLeaf();
-            System.out.println(weights);
+            if (td) {
+                tdLeaf();
+                System.out.println(weights);
+            }
             incomplete = false;
         }
         System.out.printf("Player Tiles = %d, Opponent Tiles = %d\n", playerTiles.size(), opponentTiles.size());

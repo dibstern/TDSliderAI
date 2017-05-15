@@ -66,8 +66,11 @@ public class Referee {
 
         render(board);
 
+        // Added
+        int maxturns = 200;
+
         // game loop
-        while (!board.finished()) {
+        while (!board.finished() && maxturns > 0) {
 
             // delay
             sleep(options.delay);
@@ -91,9 +94,11 @@ public class Referee {
             turn = Player.other(turn);
 
             render(board);
-
+            // Added
+            maxturns -= 1;
         }
         // Added this
+        players[0].update(previousMove);
         players[0].update(previousMove);
 
         /* * * *
