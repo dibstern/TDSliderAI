@@ -265,7 +265,7 @@ public class TDPlayer implements SliderPlayer {
     // Only do the above if the player being played against is potentially a bad player
     // Temporal Difference of the leaf node of the principal variation at time t
     private double tempDiff(int t) {
-        return principalVariations.get(t+1).getValue() - principalVariations.get(t).getValue();
+        return min(principalVariations.get(t+1).getValue() - principalVariations.get(t).getValue(), 0.0);
     }
 
 
@@ -299,7 +299,7 @@ public class TDPlayer implements SliderPlayer {
     public ArrayList<Double> evalFeatures(Board board) {
 
         // Feature 1
-        double playerTileDifference = playerTiles.size() - opponentTiles.size();
+        //double playerTileDifference = playerTiles.size() - opponentTiles.size();
 
         // Feature 2
         // Maximise the opponent's distances, minimise our own distances
@@ -321,7 +321,7 @@ public class TDPlayer implements SliderPlayer {
         // Add all features to an ArrayList
         ArrayList<Double> features = new ArrayList<Double>();
 
-        features.add(playerTileDifference);                        // -1.0
+        //features.add(playerTileDifference);                        // -1.0
         features.add(sumOpponentDistances - sumPlayerDistances);   //  1.0
         features.add(forwardMovesPla - forwardMovesOpp);           // -0.5
         //features.add(sumPlayerDistances);                        // -1.0
@@ -401,7 +401,9 @@ public class TDPlayer implements SliderPlayer {
             double val = potentialVariation.getValue();
             //debug
             if (debug) {
-                System.out.println(move.toString() + " = val: " + val);
+                System.out.println(move.toString() + " = val: " + val + " Features: " + potentialVariation.getFeatures());
+                System.out.println("Potential Board: ");
+                potentialVariation.getBoard().boardDisplay();
                 myVals.add(potentialVariation.getValue());
             }
             // end debug
@@ -461,9 +463,13 @@ public class TDPlayer implements SliderPlayer {
             //debug
             if (debug) {
                 myVals.add(value);
+                System.out.printf(move.toString() + "Value: %f, Alpha: %f, Beta: %f\n", value, alpha, beta);
             }
             // end debug
             if (value >= beta) {
+                if (debug) {
+                    System.out.println("Decided " + move.toString() + " is optimal.");
+                }
                 return potentialVariation;
             }
             alpha = max(alpha, value);
@@ -498,7 +504,7 @@ public class TDPlayer implements SliderPlayer {
             newBoard = board.copyBoard();
             modifyBoard(newBoard, move);
             potentialVariation = maxValue(newBoard, depth+1, alpha, beta);
-            value = max(value, potentialVariation.getValue());
+            value = min(value, potentialVariation.getValue());
             //debug
             if (debug) myVals.add(value);
             // end debug
