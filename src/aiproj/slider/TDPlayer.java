@@ -25,7 +25,7 @@ public class TDPlayer implements SliderPlayer {
     private ArrayList<Tile> playerTiles = new ArrayList<Tile>();
     private ArrayList<Tile> opponentTiles = new ArrayList<Tile>();
     private double movecount;
-    private ArrayList<Double> weights = new ArrayList<Double>(Arrays.asList(-1.0, 1.0, -1.0, 1.0, 0.5, -0.5, 1.0));
+    private ArrayList<Double> weights;// = new ArrayList<Double>(Arrays.asList(-1.0, 1.0, -1.0, 1.0, 0.5, -0.5, 1.0));
 
     // debug
     private static final Boolean debug = false;
@@ -62,6 +62,8 @@ public class TDPlayer implements SliderPlayer {
 
         //String fileName = "weights.txt";
 
+        weights = readWeightFile();
+
         // Assigning Player Pieces
         String playerType = Character.toString(player);
         ourPlayer = playerType;
@@ -88,6 +90,7 @@ public class TDPlayer implements SliderPlayer {
 
         FileReader in=null;
         String s = "";
+        ArrayList<Double> w = new ArrayList<Double>();
 
         try {
             in = new FileReader(WEIGHTS_FILE);
@@ -98,8 +101,9 @@ public class TDPlayer implements SliderPlayer {
             }
             String[] weightsString = s.split(" ");
             for (int i = 0; i < weightsString.length; i++) {
-                weights.set(i, Double.parseDouble(weightsString[i]));
+                w.add(Double.parseDouble(weightsString[i]));
             }
+
             in.close();
         }
         catch ( Exception e) {
@@ -107,7 +111,7 @@ public class TDPlayer implements SliderPlayer {
             System.exit(0);
         }
 
-        return weights;
+        return w;
     }
 
     private void updateWeightFile(ArrayList<Double> weights) {
@@ -206,7 +210,7 @@ public class TDPlayer implements SliderPlayer {
     public void tdLeaf() {
 
         // Read in the weights file
-        weights = readWeightFile();
+        //weights = readWeightFile();
 
         // Calculate sumdiff arraylist for each weight, so it can be re-used for each weight
         ArrayList<Double> sumdiffs = new ArrayList<Double>();
@@ -270,6 +274,21 @@ public class TDPlayer implements SliderPlayer {
     private void refresh(Board board) {
         board.setMovesPlayer(board.getAllMoves(ourPlayer));
         board.setMovesOpponent(board.getAllMoves(Opponent));
+
+        if (ourPlayer.equals(Tile.PLAYER_H)) {
+            this.playerTiles = board.getHTiles();
+            this.opponentTiles = board.getVTiles();
+
+        }
+        else if (ourPlayer.equals(Tile.PLAYER_V)) {
+            this.playerTiles = board.getVTiles();
+            this.opponentTiles = board.getHTiles();
+        }
+        else {
+            System.out.println("Catastrophic error: incorrect player name");
+            System.exit(0);
+        }
+
     }
 
     /**
@@ -326,7 +345,9 @@ public class TDPlayer implements SliderPlayer {
     // ------------------------------
 
     public ArrayList<Double> evalFeatures(Board board) {
+
         // Set list of tiles based on who the player is
+        // THIS CODE IS DUPLICATED IN REFRESH
         if (ourPlayer.equals(Tile.PLAYER_H)) {
             this.playerTiles = board.getHTiles();
             this.opponentTiles = board.getVTiles();
