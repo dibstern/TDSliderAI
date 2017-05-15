@@ -28,7 +28,7 @@ public class TDPlayer implements SliderPlayer {
     private ArrayList<Double> weights;// = new ArrayList<Double>(Arrays.asList(-1.0, 1.0, -1.0, 1.0, 0.5, -0.5))
 
     // debug
-    private static final Boolean debug = false;
+    private static final Boolean debug = true;
     private ArrayList<ArrayList<ArrayList<Double>>> vals;
     // end debug
 
@@ -477,7 +477,7 @@ public class TDPlayer implements SliderPlayer {
         for (Move move : moves) {
             newBoard = board.copyBoard();
             modifyBoard(newBoard, move);
-            potentialVariation = minValue(newBoard, depth+1, alpha, beta);
+            potentialVariation = maxValue(newBoard, depth+1, alpha, beta);
             value = max(value, potentialVariation.getValue());
             //debug
             if (debug) myVals.add(value);
