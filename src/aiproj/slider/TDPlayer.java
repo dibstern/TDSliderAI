@@ -25,7 +25,7 @@ public class TDPlayer implements SliderPlayer {
     private ArrayList<Tile> playerTiles = new ArrayList<Tile>();
     private ArrayList<Tile> opponentTiles = new ArrayList<Tile>();
     private double movecount;
-    private ArrayList<Double> weights = new ArrayList<Double>(Arrays.asList(-1.0, 1.0, -1.0, 1.0, 0.5, -0.5));//, 1.0));
+    private ArrayList<Double> weights;// = new ArrayList<Double>(Arrays.asList(-1.0, 1.0, -1.0, 1.0, 0.5, -0.5))
 
     // debug
     private static final Boolean debug = false;
@@ -89,6 +89,7 @@ public class TDPlayer implements SliderPlayer {
 
         FileReader in=null;
         String s = "";
+        ArrayList<Double> w = new ArrayList<Double>();
 
         try {
             in = new FileReader(WEIGHTS_FILE);
@@ -99,7 +100,7 @@ public class TDPlayer implements SliderPlayer {
             }
             String[] weightsString = s.split(" ");
             for (int i = 0; i < weightsString.length; i++) {
-                weights.set(i, Double.parseDouble(weightsString[i]));
+                w.add(Double.parseDouble(weightsString[i]));
             }
             in.close();
         }
@@ -108,7 +109,7 @@ public class TDPlayer implements SliderPlayer {
             System.exit(0);
         }
 
-        return weights;
+        return w;
     }
 
     private void updateWeightFile(ArrayList<Double> weights) {
@@ -286,23 +287,7 @@ public class TDPlayer implements SliderPlayer {
 
 
     public ArrayList<Double> evalFeatures(Board board) {
-        // Set list of tiles based on who the player is
-        if (ourPlayer.equals(Tile.PLAYER_H)) {
-            this.playerTiles = board.getHTiles();
-            this.opponentTiles = board.getVTiles();
-
-        }
-        else if (ourPlayer.equals(Tile.PLAYER_V)) {
-            this.playerTiles = board.getVTiles();
-            this.opponentTiles = board.getHTiles();
-        }
-        else {
-            System.out.println("Catastrophic error: incorrect player name");
-            System.exit(0);
-        }
-
-        // Need our features to be of a relatively consistent size across the game, so as to not distort the weights
-        // Maximise the opponent's distances, minimise our own distances; positive weight
+        // Maximise the opponent's distances, minimise our own distances
         double sumPlayerDistances = sumDistances(playerTiles,  board.getLength());
         double sumOpponentDistances = sumDistances(opponentTiles, board.getLength());
 
@@ -564,6 +549,21 @@ public class TDPlayer implements SliderPlayer {
     private void refresh(Board board) {
         board.setMovesPlayer(board.getAllMoves(ourPlayer));
         board.setMovesOpponent(board.getAllMoves(Opponent));
+
+        // Set list of tiles based on who the player is
+        if (ourPlayer.equals(Tile.PLAYER_H)) {
+            this.playerTiles = board.getHTiles();
+            this.opponentTiles = board.getVTiles();
+
+        }
+        else if (ourPlayer.equals(Tile.PLAYER_V)) {
+            this.playerTiles = board.getVTiles();
+            this.opponentTiles = board.getHTiles();
+        }
+        else {
+            System.out.println("Catastrophic error: incorrect player name");
+            System.exit(0);
+        }
     }
 
     /**
