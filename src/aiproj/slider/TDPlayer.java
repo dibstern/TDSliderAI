@@ -25,7 +25,7 @@ public class TDPlayer implements SliderPlayer {
     private ArrayList<Tile> playerTiles = new ArrayList<Tile>();
     private ArrayList<Tile> opponentTiles = new ArrayList<Tile>();
     private double movecount;
-    private ArrayList<Double> weights = new ArrayList<Double>(Arrays.asList(-1.0, 1.0, -1.0, 1.0, 0.5, -0.5, 1.0));
+    private ArrayList<Double> weights = new ArrayList<Double>(Arrays.asList(-1.0, 1.0, -1.0, 1.0, 0.5, -0.5));//, 1.0));
 
     // debug
     private static final Boolean debug = false;
@@ -60,7 +60,8 @@ public class TDPlayer implements SliderPlayer {
      */
     public void init(int dimension, String board, char player) {
 
-        //String fileName = "weights.txt";
+        // Read in the weights file
+        weights = readWeightFile();
 
         // Assigning Player Pieces
         String playerType = Character.toString(player);
@@ -205,9 +206,6 @@ public class TDPlayer implements SliderPlayer {
 
     public void tdLeaf() {
 
-        // Read in the weights file
-        weights = readWeightFile();
-
         // Calculate sumdiff arraylist for each weight, so it can be re-used for each weight
         ArrayList<Double> sumdiffs = new ArrayList<Double>();
         for (int t = 0; t < principalVariations.size() - 1; t++) {
@@ -224,12 +222,17 @@ public class TDPlayer implements SliderPlayer {
     // Calculates the update value to be applied to the weight (after being modulated by alpha)
     private double updateVal(int i, ArrayList<Double> sumdiffs) {
         double sum = 0;
-        // For each time t
+        // Each time t has a principal variation, which we consider
         for (int t = 0; t < principalVariations.size() - 1; t++) {
+
+            // Get the feature Array for the principal variation in question
             ArrayList<Double> features = principalVariations.get(t).getFeatures();
-            // Added movecount as a multiplier to all features, and as a feature itself, so that the impact of
-            // different features can change over the course of a game
-            sum += features.get(i) * sumdiffs.get(t);
+
+            // Get the feature so we can get the derivative
+            double feat_i = features.get(i) * SHRINK_FACTOR;
+
+            // Calculate the partial derivative of the eval function wrt weight i, mult. by the temporal difference
+            sum += (1.0 - tanh(feat_i) * tanh(feat_i)) * sumdiffs.get(t);
         }
         return sum;
     }
@@ -248,75 +251,11 @@ public class TDPlayer implements SliderPlayer {
 
     // CHANGE:
     // Modify to return 0 if the difference is positive? Positive differences arrive from opponent errors.
+    // Only do the above if the player being played against is potentially a bad player
     // Temporal Difference of the leaf node of the principal variation at time t
     private double tempDiff(int t) {
         return principalVariations.get(t+1).getValue() - principalVariations.get(t).getValue();
     }
-
-
-
-
-
-
-    // ------------------------------
-    //
-    // State Maintenance
-    //
-    // ------------------------------
-
-    /**
-     * Refreshes variables about the board given its state and given which turn has been played
-     */
-    private void refresh(Board board) {
-        board.setMovesPlayer(board.getAllMoves(ourPlayer));
-        board.setMovesOpponent(board.getAllMoves(Opponent));
-    }
-
-    /**
-     * Updates the recorded array of tiles of a board, given the new move
-     * @param newMove A move object, played either by the player or by the opponent.
-     */
-
-    private void updateTileArray(Board board, Move newMove) {
-        // Find new X and Y
-        int oldX = newMove.i;
-        int oldY = newMove.j;
-        Move.Direction direction = newMove.d;
-
-        int newX = (direction == Move.Direction.LEFT) ? (oldX - 1) : oldX;
-        newX = (direction == Move.Direction.RIGHT) ? (oldX + 1) : newX;
-
-        int newY = (direction == Move.Direction.UP) ? (oldY + 1) : oldY;
-        newY = (direction == Move.Direction.DOWN) ? (oldY - 1) : newY;
-
-        // Retrieve old tile, and its type
-        Tile oldTile = board.getTile(oldX, oldY);
-        String tileType = oldTile.getCellType();
-
-        // Get Positional Indices for new tile
-        int[] newpos = board.getPos(newX, newY);
-        int newRow = newpos[0];
-        int newCol = newpos[1];
-
-        // Use these to find New tile
-        Tile newtile = new Tile(tileType, newRow, newCol, board.getLength());
-
-        // If h, remove old tile from h_tiles and add new tile to h_tiles
-        if (tileType.equals(Tile.PLAYER_H)) {
-            board.removeHTile(board.getTile(oldX, oldY));
-            if (validPos(newX, newY, board)) {
-                board.addHTile(newtile);
-            }
-        }
-        // If V (updateTiles only called on non-null moves so can assume it's V if not H)
-        else if (tileType.equals(Tile.PLAYER_V)) {
-            board.removeVTile(board.getTile(oldX, oldY));
-            if (validPos(newX, newY,board)) {
-                board.addVTile(newtile);
-            }
-        }
-    }
-
 
 
     // ------------------------------
@@ -324,6 +263,27 @@ public class TDPlayer implements SliderPlayer {
     // EVALUATION
     //
     // ------------------------------
+
+    public double evaluate(Board board, ArrayList<Double> features) {
+
+        // The end state of the game should be properly evaluated by the evaluation function.
+        if (opponentTiles.size() == 0) {
+            return -1;
+        }
+        if (playerTiles.size() == 0) {
+            return 1;
+        }
+
+        // Sum total based on feature weights
+        double total = 0;
+        for (int i = 0; i < weights.size();i++) {
+            //System.out.println("Feature: " + i + " == " + features.get(i) + "; Weight == " + weights.get(i));
+            total += weights.get(i) * features.get(i);
+        }
+        // Squashes Evaluation function to between -1 and 1, and the shrink factor allows for the high feature weights.
+        return tanh(total*SHRINK_FACTOR);
+    }
+
 
     public ArrayList<Double> evalFeatures(Board board) {
         // Set list of tiles based on who the player is
@@ -362,27 +322,6 @@ public class TDPlayer implements SliderPlayer {
         //features.add(movecount);                                //  1.0
         return features;
     }
-
-    public double evaluate(Board board, ArrayList<Double> features) {
-
-        // The end state of the game should be properly evaluated by the evaluation function.
-        if (opponentTiles.size() == 0) {
-            return -1;
-        }
-        if (playerTiles.size() == 0) {
-            return 1;
-        }
-
-        // Sum total based on feature weights
-        double total = 0;
-        for (int i = 0; i < weights.size();i++) {
-            //System.out.println("Feature: " + i + " == " + features.get(i) + "; Weight == " + weights.get(i));
-            total += weights.get(i) * features.get(i);
-        }
-        // Squashes Evaluation function to between -1 and 1, and the shrink factor allows for the high feature weights.
-        return tanh(total*SHRINK_FACTOR);
-    }
-
 
     private double forwardMoves(ArrayList<Move> moves, String player) {
         double total = 0;
@@ -613,6 +552,64 @@ public class TDPlayer implements SliderPlayer {
 
     }
 
+    // ------------------------------
+    //
+    // State Maintenance
+    //
+    // ------------------------------
+
+    /**
+     * Refreshes variables about the board given its state and given which turn has been played
+     */
+    private void refresh(Board board) {
+        board.setMovesPlayer(board.getAllMoves(ourPlayer));
+        board.setMovesOpponent(board.getAllMoves(Opponent));
+    }
+
+    /**
+     * Updates the recorded array of tiles of a board, given the new move
+     * @param newMove A move object, played either by the player or by the opponent.
+     */
+
+    private void updateTileArray(Board board, Move newMove) {
+        // Find new X and Y
+        int oldX = newMove.i;
+        int oldY = newMove.j;
+        Move.Direction direction = newMove.d;
+
+        int newX = (direction == Move.Direction.LEFT) ? (oldX - 1) : oldX;
+        newX = (direction == Move.Direction.RIGHT) ? (oldX + 1) : newX;
+
+        int newY = (direction == Move.Direction.UP) ? (oldY + 1) : oldY;
+        newY = (direction == Move.Direction.DOWN) ? (oldY - 1) : newY;
+
+        // Retrieve old tile, and its type
+        Tile oldTile = board.getTile(oldX, oldY);
+        String tileType = oldTile.getCellType();
+
+        // Get Positional Indices for new tile
+        int[] newpos = board.getPos(newX, newY);
+        int newRow = newpos[0];
+        int newCol = newpos[1];
+
+        // Use these to find New tile
+        Tile newtile = new Tile(tileType, newRow, newCol, board.getLength());
+
+        // If h, remove old tile from h_tiles and add new tile to h_tiles
+        if (tileType.equals(Tile.PLAYER_H)) {
+            board.removeHTile(board.getTile(oldX, oldY));
+            if (validPos(newX, newY, board)) {
+                board.addHTile(newtile);
+            }
+        }
+        // If V (updateTiles only called on non-null moves so can assume it's V if not H)
+        else if (tileType.equals(Tile.PLAYER_V)) {
+            board.removeVTile(board.getTile(oldX, oldY));
+            if (validPos(newX, newY,board)) {
+                board.addVTile(newtile);
+            }
+        }
+    }
 
     // ------------------------------
     //
