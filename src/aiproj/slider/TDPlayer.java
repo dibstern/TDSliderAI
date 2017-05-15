@@ -32,7 +32,7 @@ public class TDPlayer implements SliderPlayer {
     private ArrayList<ArrayList<ArrayList<Double>>> vals;
     // end debug
 
-    private static final int MAX_DEPTH = 6;
+    private static final int MAX_DEPTH = 5;
 
     // For TDLeaf(Lambda)
     private static final double ALPHA = 0.3;
@@ -287,6 +287,9 @@ public class TDPlayer implements SliderPlayer {
 
 
     public ArrayList<Double> evalFeatures(Board board) {
+
+        double playerTileDifference = playerTiles.size() - opponentTiles.size();
+
         // Maximise the opponent's distances, minimise our own distances
         double sumPlayerDistances = sumDistances(playerTiles,  board.getLength());
         double sumOpponentDistances = sumDistances(opponentTiles, board.getLength());
@@ -298,8 +301,8 @@ public class TDPlayer implements SliderPlayer {
 
         // Add all features to an ArrayList
         ArrayList<Double> features = new ArrayList<Double>();
-        features.add(playerTiles.size()*1.0);            // -1.0
-        features.add(opponentTiles.size()*1.0);          //  1.0
+
+        features.add(playerTileDifference);         // -1.0
         features.add(sumPlayerDistances);           // -1.0
         features.add(sumOpponentDistances);         //  1.0
         features.add(forwardMovesPla);              //  0.5

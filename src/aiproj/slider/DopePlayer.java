@@ -24,7 +24,7 @@ public class DopePlayer implements SliderPlayer {
     ArrayList<ArrayList<ArrayList<Double>>> vals;
     // end debug
 
-    private static final int MAX_DEPTH = 6;
+    private static final int MAX_DEPTH = 7;
 
     // Add more info to track here, for the Evaluation function
 
