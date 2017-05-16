@@ -16,7 +16,7 @@ import java.io.FileWriter;
 import java.util.List;
 
 
-public class TDPlayerThree implements SliderPlayer {
+public class TDPlayerFour implements SliderPlayer {
 
     // Keeping Track of the Board, Player Piece Types, Number of current legal moves
     private Board curr_board;
@@ -30,12 +30,12 @@ public class TDPlayerThree implements SliderPlayer {
     private static final int MAX_DEPTH = 7;
 
     // For TDLeaf(Lambda)
-    private static final double ALPHA = 0.4;
+    private static final double ALPHA = 1.0;
     private static final double SHRINK_FACTOR = 0.2;  // 0.01;
     // Higher when untrained -> from 0.5 to 0.7 only when more reliable
     private static final double LAMBDA = 0.98;
     private static final double DELTA = 0.0001;
-    private static final String WEIGHTS_FILE = "weights_three.txt";
+    private static final String WEIGHTS_FILE = "weights_four.txt";
     private ArrayList<PrincipalVariation> principalVariations = new ArrayList<PrincipalVariation>();
     private Boolean incomplete;
 
@@ -238,11 +238,9 @@ public class TDPlayerThree implements SliderPlayer {
 
         // The end state of the game should be properly evaluated by the evaluation function.
         if (board.getPlayerTiles(Opponent).size() == 0) {
-
             return -1;
         }
         if (board.getPlayerTiles(ourPlayer).size() == 0) {
-
             return 1;
         }
 
@@ -306,10 +304,10 @@ public class TDPlayerThree implements SliderPlayer {
 
             //determine distance from the edge
             if (ourPlayer.equals(Tile.PLAYER_H)) {
-                distance = boardLength-(ourTiles.get(i).getX())-1;
+                distance = boardLength - (ourTiles.get(i).getX()) - 1;
             }
             else {
-                distance = boardLength-(ourTiles.get(i).getY())-1;
+                distance = boardLength - (ourTiles.get(i).getY()) - 1;
             }
 
             //increase the counter for the number of player tiles at that distance
@@ -322,14 +320,14 @@ public class TDPlayerThree implements SliderPlayer {
 
             //determine distance from the edge
             if (Opponent.equals(Tile.PLAYER_H)) {
-                distance = boardLength-(theirTiles.get(i).getX())-1;
+                distance = boardLength - (theirTiles.get(i).getX()) - 1;
             }
             else {
-                distance = boardLength-(theirTiles.get(i).getY())-1;
+                distance = boardLength - (theirTiles.get(i).getY()) - 1;
             }
 
             //increase the counter for the number of opponent tiles at that distance
-            opponentTileDistanceTotals[distance] +=1;
+            opponentTileDistanceTotals[distance] += 1;
         }
 
 
@@ -341,7 +339,7 @@ public class TDPlayerThree implements SliderPlayer {
         features.add(forwardAdv);                                  // -0.5
 
 
-        for (int i = 0; i<Board.MAX_SIZE;i++) {
+        for (int i = 0; i < Board.MAX_SIZE; i++) {
             features.add((double)playerTileDistanceTotals[i]);
             features.add((double)opponentTileDistanceTotals[i]);
 
@@ -353,7 +351,7 @@ public class TDPlayerThree implements SliderPlayer {
         //features.add(forwardMovesOpp);                           // -0.5
         //features.add(movecount);                                 //  1.0
 
-    // debug - print features
+        // debug - print features
         /*
         String s = "";
         for (int i = 0;i<features.size();i++) {
