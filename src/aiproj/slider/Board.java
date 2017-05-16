@@ -24,6 +24,8 @@ public class Board {
     private ArrayList<Move> movesPlayer = new ArrayList();
     private ArrayList<Move> movesOpponent = new ArrayList();
 
+    public static final Integer MAX_SIZE = 7;
+
 
 
     /**
@@ -221,6 +223,13 @@ public class Board {
     }
     public ArrayList<Move> getMovesOpponent() {
         return this.movesOpponent;
+    }
+
+    public ArrayList<Tile> getPlayerTiles(String player) {
+        if (player.equals(Tile.PLAYER_H)) {
+            return h_tiles;
+        }
+        return v_tiles;
     }
 
 }
