@@ -30,7 +30,7 @@ public class TDPlayer implements SliderPlayer {
     private static final int MAX_DEPTH = 6;
 
     // For TDLeaf(Lambda)
-    private static final double ALPHA = 0.05;
+    private static final double ALPHA = 0.4;
     private static final double SHRINK_FACTOR = 0.2;  // 0.01;
     // Higher when untrained -> from 0.5 to 0.7 only when more reliable
     private static final double LAMBDA = 0.98;

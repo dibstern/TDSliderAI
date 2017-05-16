@@ -67,7 +67,7 @@ public class Referee {
         render(board);
 
         // Added
-        int maxturns = 200;
+        int maxturns = 350;
         //String[] ppieces = {"H", "V"};
 
         // game loop
