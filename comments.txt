@@ -1,0 +1,62 @@
+Comments for Part B
+For Artificial Intelligence at the University of Melbourne 
+by David Stern (dstern 585870) and Hugh Edwards (hughe 584183)
+2017-03-26
+
+
+Our approach
+
+	Our approach to playing Slider is to use Minimax with alpha-beta pruning, with an evaluation function trained with the TD Leaf Lambda algorithm.
+
+
+	Minimax
+
+		As outlined in the textbook (Artificial Intelligence: A Modern Approach by Russel & Norvig), minimax selects the optimal move, assuming the opponent is also optimal (ie maximising a minimum value recursively).
+
+	Alpha Beta Pruning
+
+		Our minimax algorithm implements alpha-beta pruning, which effectively reduces sections of the tree which must be examined, in order to increase the performance of the algorithm under the given time and space requirements.
+
+		This pruning works by ignoring certain parts of the tree which are 'irrelevant' - if the algorithm can work, for example, that a branch is already suboptimal compared to a branch it has looked at, then it can safely ignore the rest of the branch.
+
+
+	Evaluation Function
+
+		Our evaluation function combines a number of features with weights (normalised with the tanh function).
+
+		We have attempted to capture a rich variety of features about the board which capture its desirability.
+
+		Our features are:
+
+			1	The number of player tiles subtract opponents tiles. Desirable obviously because we want to have less tiles remaining than the opponent.
+			2	The total distances from player tiles to passing their goal edge, subtract the total distances for opponents tiles. Desirable because less distance to the edge (roughly) means less moves to win.
+			3	A measure of the proportion of forward moves available to our player, relative to the proportion of forward moves available to the opponent. Here, 'proportion' refers to the number of forward moves for a player, divided by number of tiles belonging to that player, then multiplied by the number of tiles that player initially has on the board at the start of the game. This last multiplier is used so that this measure is consistent across different board sizes.
+			4	Number of player tiles which are 0 tiles from the goal edge
+			5 	Number of opponent tiles which are 0 tiles from the goal edge
+			5	Number of player tiles which are 1 tiles from the goal edge
+			6 	Number of opponent tiles which are 1 tiles from the goal edge
+			7	Number of player tiles which are 2 tiles from the goal edge
+			8 	Number of opponent tiles which are 2 tiles from the goal edge
+			9
+			.
+			.
+			18 	Number of opponent tiles which are 6 tiles from the goal edge
+
+	TD-Leaf-Lambda
+
+		The TD-Leaf-Lambda algorithm is a form of reinforced learning which is used for multi-step prediction. We used it to train our AI to learn an effective set of weights for our features.
+
+		Our algorithm was trained in over 300 games, against a variety of opponents including;
+			-	a random player
+			- 	a 1-ply minimax opponent
+			-	a 6-ply minimax opponent
+			-	Itself
+		We aimed to give the algorithm sufficient variety of opponents and games, such that it wasn't only trained to perform against 'good' or 'bad' opponents, but opponents in general.
+
+		We observed that the more trainined our AI received, the better its performance (with diminishing returns).
+
+
+
+
+
+
