@@ -13,6 +13,7 @@ import static java.lang.Math.abs;
 import static java.lang.Math.pow;
 import java.io.FileReader;
 import java.io.FileWriter;
+import java.util.List;
 
 
 public class TDPlayerTwo implements SliderPlayer {
@@ -25,21 +26,22 @@ public class TDPlayerTwo implements SliderPlayer {
     private ArrayList<Tile> playerTiles = new ArrayList<Tile>();
     private ArrayList<Tile> opponentTiles = new ArrayList<Tile>();
     private double movecount;
-    private ArrayList<Double> weights;// = new ArrayList<Double>(Arrays.asList(-1.0, 1.0, -1.0, 1.0, 0.5, -0.5))
-    private static final int MAX_DEPTH = 6;
+    private ArrayList<Double> weights;
+    private static final int MAX_DEPTH = 8;
 
     // For TDLeaf(Lambda)
-    private static final double ALPHA = 0.2;
+    private static final double ALPHA = 0.05;
     private static final double SHRINK_FACTOR = 0.2;  // 0.01;
     // Higher when untrained -> from 0.5 to 0.7 only when more reliable
     private static final double LAMBDA = 0.98;
+    private static final double DELTA = 0.0001;
     private static final String WEIGHTS_FILE = "weights_two.txt";
     private ArrayList<PrincipalVariation> principalVariations = new ArrayList<PrincipalVariation>();
     private Boolean incomplete;
 
     // Learn Weights w/ TDLeaf?
-    private static final Boolean td = false;//true;
-    private static final Boolean makeupdates = false;
+    private static final Boolean td = true;
+    private static final Boolean makeupdates = true;
 
     // Debug?
     private static final Boolean debug = false;
@@ -95,7 +97,7 @@ public class TDPlayerTwo implements SliderPlayer {
      * move at the beginning of the game, move = null.
      */
     public void update(Move move) {
-        modifyBoard(curr_board,move);
+        modifyBoard(curr_board, move);
         refresh(curr_board);
         movecount += 1;
 
@@ -108,7 +110,7 @@ public class TDPlayerTwo implements SliderPlayer {
             }
             incomplete = false;
         }
-        System.out.printf("Player Tiles = %d, Opponent Tiles = %d\n", playerTiles.size(), opponentTiles.size());
+        if (debug) System.out.printf("Player Tiles = %d, Opponent Tiles = %d\n", playerTiles.size(), opponentTiles.size());
     }
 
     /**
@@ -128,20 +130,14 @@ public class TDPlayerTwo implements SliderPlayer {
      * at this point of the game, or null if there are no legal moves.
      */
     public Move move() {
-        System.out.printf("\nPLAYER: %s\nNEW MOVE:\nChoosing between moves: " + curr_board.getMovesPlayer() + "\n", ourPlayer);
+        if (debug) System.out.printf("\nPLAYER: %s\nNEW MOVE:\nChoosing between moves: " + curr_board.getMovesPlayer() + "\n", ourPlayer);
         if (curr_board.getMovesPlayer().isEmpty()) {
             return null;
         }
         Move firstMove = minimaxDecision(curr_board);
         update(firstMove);
 
-        //DEBUG
-        //System.out.println("Board evaluation function (player "+ourPlayer+"): "+ evaluateBoard(curr_board));
-        // end debug
-        // if TERMINAL-STATE:
-        //     TDLeaf(Boards, weights, EVAL, alpha)
-        //
-        System.out.println("\nFinal Move Choice: " + firstMove.toString() + "\n\n\n");
+        if (debug) System.out.println("\nFinal Move Choice: " + firstMove.toString() + "\n\n\n");
         return firstMove;
     }
 
@@ -157,6 +153,8 @@ public class TDPlayerTwo implements SliderPlayer {
     // ------------------------------
 
     public void tdLeaf() {
+        // Initialise ArrayList of New Weights
+        ArrayList<Double> new_weights = new ArrayList<Double>();
 
         // Initialise Array of temporal Differences
         ArrayList<Double> tempdifferences = new ArrayList<Double>();
@@ -176,9 +174,10 @@ public class TDPlayerTwo implements SliderPlayer {
         for (int i = 0; i < weights.size(); i++) {
             double weight_update = ALPHA*(updateVal(i, sumdiffs));
             if (debug) System.out.printf("\nUpdate Weight %d: %f + %f\n", i + 1, weights.get(i), weight_update);
-            weights.set(i, weights.get(i) + weight_update);
+            new_weights.add(weights.get(i) + weight_update);
         }
-        if (makeupdates) Input.updateWeightFile(weights, WEIGHTS_FILE);
+        System.out.println("Updating File to: " + new_weights);
+        if (makeupdates) Input.updateWeightFile(new_weights, WEIGHTS_FILE);
     }
 
 
@@ -195,8 +194,25 @@ public class TDPlayerTwo implements SliderPlayer {
             // Get the feature so we can get the derivative
             double feat_i = features.get(i) * SHRINK_FACTOR;
 
+            // Calculate the partial derivative of the eval function wrt weight i
+            //double partial_derivative = 1.0 - tanh(feat_i) * tanh(feat_i);
+
+            // Second Method of Calculating The Derivative
+            double eval_1 = tanh((features.get(i) * (weights.get(i) + DELTA)) * SHRINK_FACTOR);
+            double eval_2 = tanh((features.get(i) * (weights.get(i))) * SHRINK_FACTOR);
+            double partial_derivative_2 = (eval_1 - eval_2) / DELTA;
+            //System.out.printf("\nWRT %d Derivative 1: %f; New Derivative: %f\n", i, partial_derivative, partial_derivative_2);
+
+            //System.out.println("Features: " + features + "   Weights: " + weights);
+
+            //ArrayList<Double> new_weights = new ArrayList<Double>(weights);
+            //new_weights.set(i, new_weights.get(i) + DELTA);
+            //System.out.println("Added " + DELTA + " to weight " + (i + 1) + " weights = " + weights + " new_weights = " + new_weights);
+            //double partial_derivative_3 = (evaluate(features, new_weights) - evaluate(features, weights)) / DELTA;
+            //System.out.printf("\nDerivative 1: %f; New Derivative: %f\n", partial_derivative, partial_derivative_2);
+
             // Calculate the partial derivative of the eval function wrt weight i, mult. by the temporal difference sum
-            sum += (1.0 - tanh(feat_i) * tanh(feat_i)) * sumdiffs.get(t);
+            sum += partial_derivative_2 * sumdiffs.get(t);
         }
         if (debug) System.out.printf("Sum %d: " + sum + "\n", i + 1);
         return sum;
@@ -219,7 +235,8 @@ public class TDPlayerTwo implements SliderPlayer {
     // Only do the above if the player being played against is potentially a bad player
     // Temporal Difference of the leaf node of the principal variation at time t
     private double tempDiff(int t) {
-        return min(principalVariations.get(t+1).getValue() - principalVariations.get(t).getValue(), 0.0);
+        //return min(principalVariations.get(t+1).getValue() - principalVariations.get(t).getValue(), 0.0);
+        return principalVariations.get(t+1).getValue() - principalVariations.get(t).getValue();
     }
 
 
@@ -229,7 +246,7 @@ public class TDPlayerTwo implements SliderPlayer {
     //
     // ------------------------------
 
-    public double evaluate(Board board, ArrayList<Double> features) {
+    public double evaluate(ArrayList<Double> features, ArrayList<Double> weightarray) {
 
         // The end state of the game should be properly evaluated by the evaluation function.
         if (opponentTiles.size() == 0) {
@@ -241,9 +258,9 @@ public class TDPlayerTwo implements SliderPlayer {
 
         // Sum total based on feature weights
         double total = 0;
-        for (int i = 0; i < weights.size();i++) {
+        for (int i = 0; i < weightarray.size();i++) {
             //System.out.println("Feature: " + i + " == " + features.get(i) + "; Weight == " + weights.get(i));
-            total += weights.get(i) * features.get(i);
+            total += weightarray.get(i) * features.get(i);
         }
         // Squashes Evaluation function to between -1 and 1, and the shrink factor allows for the high feature weights.
         return tanh(total*SHRINK_FACTOR);
@@ -309,7 +326,7 @@ public class TDPlayerTwo implements SliderPlayer {
 
     private double sumDistances(ArrayList<Tile> tiles, int boardSize) {
 
-        if (tiles.size() < 1) {
+        if (tiles.size() <1) {
             return 0.0;
         }
 
@@ -392,7 +409,6 @@ public class TDPlayerTwo implements SliderPlayer {
         }
         // end debug
         return maxMove;
-
     }
 
     private PrincipalVariation maxValue(Board board, int depth, double alpha, double beta) {
@@ -402,7 +418,7 @@ public class TDPlayerTwo implements SliderPlayer {
 
         if (terminalTest(depth) || moves.size() == 0) {
             ArrayList<Double> features = evalFeatures(board);
-            return new PrincipalVariation(board, features, evaluate(board, features));
+            return new PrincipalVariation(board, features, evaluate(features, weights));
         }
         //debug
         ArrayList<Double> myVals = new ArrayList<Double>();
@@ -445,7 +461,7 @@ public class TDPlayerTwo implements SliderPlayer {
 
         if (terminalTest(depth) || moves.size() == 0) {
             ArrayList<Double> features = evalFeatures(board);
-            return new PrincipalVariation(board, features, evaluate(board, features));
+            return new PrincipalVariation(board, features, evaluate(features, weights));
         }
 
         //debug

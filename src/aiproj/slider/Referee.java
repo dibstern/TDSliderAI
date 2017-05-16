@@ -68,6 +68,7 @@ public class Referee {
 
         // Added
         int maxturns = 200;
+        //String[] ppieces = {"H", "V"};
 
         // game loop
         while (!board.finished() && maxturns > 0) {
@@ -78,6 +79,11 @@ public class Referee {
             // calculate and time move
             timer.start();
             players[turn].update(previousMove);
+
+            // Added
+            //System.out.printf("\nPlayer %s's turn:\n", ppieces[turn]);
+            //System.out.println("Referee's turn variable says: " + (turn==Player.H ? "horizontal" : "vertical"));
+
             previousMove = players[turn].move();
             times[turn] += timer.clock();
 
@@ -99,7 +105,7 @@ public class Referee {
         }
         // Added this
         players[0].update(previousMove);
-        //players[1].update(previousMove);
+        players[1].update(previousMove);
 
         /* * * *
          * game over! finally, display the results
@@ -110,7 +116,10 @@ public class Referee {
             System.out.println("times:");
             System.out.println(" horizontal ~"+ times[Player.H]/1000000 +"ms");
             System.out.println(" vertical   ~"+ times[Player.V]/1000000 +"ms");
-        } else {
+        } else if (maxturns <= 0){
+            System.out.println("Maximum Moves Exceeded");
+        }
+        else {
             System.out.println("illegal move: "
                     + (turn==Player.H ? "horizontal" : "vertical"));
             System.out.println(" " + message);
