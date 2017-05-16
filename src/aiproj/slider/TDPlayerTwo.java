@@ -15,7 +15,7 @@ import java.io.FileReader;
 import java.io.FileWriter;
 
 
-public class TDPlayer implements SliderPlayer {
+public class TDPlayerTwo implements SliderPlayer {
 
     // Keeping Track of the Board, Player Piece Types, Number of current legal moves
     private Board curr_board;
@@ -33,13 +33,13 @@ public class TDPlayer implements SliderPlayer {
     private static final double SHRINK_FACTOR = 0.2;  // 0.01;
     // Higher when untrained -> from 0.5 to 0.7 only when more reliable
     private static final double LAMBDA = 0.98;
-    private static final String WEIGHTS_FILE = "weights.txt";
+    private static final String WEIGHTS_FILE = "weights_two.txt";
     private ArrayList<PrincipalVariation> principalVariations = new ArrayList<PrincipalVariation>();
     private Boolean incomplete;
 
     // Learn Weights w/ TDLeaf?
-    private static final Boolean td = true;//true;
-    private static final Boolean makeupdates = true;
+    private static final Boolean td = false;//true;
+    private static final Boolean makeupdates = false;
 
     // Debug?
     private static final Boolean debug = false;
@@ -219,8 +219,7 @@ public class TDPlayer implements SliderPlayer {
     // Only do the above if the player being played against is potentially a bad player
     // Temporal Difference of the leaf node of the principal variation at time t
     private double tempDiff(int t) {
-        //return min(principalVariations.get(t+1).getValue() - principalVariations.get(t).getValue(), 0.0);
-        return principalVariations.get(t+1).getValue() - principalVariations.get(t).getValue();
+        return min(principalVariations.get(t+1).getValue() - principalVariations.get(t).getValue(), 0.0);
     }
 
 
@@ -310,7 +309,7 @@ public class TDPlayer implements SliderPlayer {
 
     private double sumDistances(ArrayList<Tile> tiles, int boardSize) {
 
-        if (tiles.size() <1) {
+        if (tiles.size() < 1) {
             return 0.0;
         }
 

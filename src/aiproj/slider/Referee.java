@@ -99,7 +99,7 @@ public class Referee {
         }
         // Added this
         players[0].update(previousMove);
-        players[0].update(previousMove);
+        //players[1].update(previousMove);
 
         /* * * *
          * game over! finally, display the results
