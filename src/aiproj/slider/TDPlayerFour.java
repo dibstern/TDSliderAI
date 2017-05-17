@@ -15,40 +15,50 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.util.List;
 
-
+/**
+ * A player for the game "Slider"
+ * For Artificial Intelligence at the University of Melbourne
+ * by David Stern (dstern 585870) and Hugh Edwards (hughe 584183)
+ * 2017-03-26
+ *
+ * See comments.txt for details
+ *
+ *  TD Leaf Lambda credit to:
+ *   https://www.cs.princeton.edu/courses/archive/fall06/cos402/papers/chess-RL.pd
+ *   http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.140.1523&rep=rep1&type=pdf
+ *
+ */
 public class TDPlayerFour implements SliderPlayer {
 
-    // Keeping Track of the Board, Player Piece Types, Number of current legal moves
-    private Board curr_board;
-    private int boardsize;
+    // Keeping Track of information about the current board
+    private Board currentBoard;
+    private int boardSize;
     private String ourPlayer;
-    private String Opponent;
+    private String opponent;
     private ArrayList<Tile> playerTiles = new ArrayList<Tile>();
     private ArrayList<Tile> opponentTiles = new ArrayList<Tile>();
-    private double movecount;
+    private double moveCount;
+
+    // Information about weights (for the evaluation function)
     private ArrayList<Double> weights;
+    private static final String WEIGHTS_FILE = "weights_four.txt";
+
+    // Maximum search depth
     private static final int MAX_DEPTH = 7;
 
-    // For TDLeaf(Lambda)
+    // Parameters for TDLeaf(Lambda)
     private static final double ALPHA = 1.0;
-    private static final double SHRINK_FACTOR = 0.2;  // 0.01;
-    // Higher when untrained -> from 0.5 to 0.7 only when more reliable
+    private static final double SHRINK_FACTOR = 0.2;
     private static final double LAMBDA = 0.98;
     private static final double DELTA = 0.0001;
-    private static final String WEIGHTS_FILE = "weights_four.txt";
     private ArrayList<PrincipalVariation> principalVariations = new ArrayList<PrincipalVariation>();
+
+    // Whether the game is complete or not
     private Boolean incomplete;
 
-    // Learn Weights w/ TDLeaf?
+    // For turning training on or off
     private static final Boolean td = true;
-    private static final Boolean makeupdates = true;
-
-    // Debug?
-    private static final Boolean debug = false;
-    private ArrayList<ArrayList<ArrayList<Double>>> vals;
-    // end debug
-
-    // Add more info to track here, for the Evaluation function
+    private static final Boolean makeupdates = false;
 
 
     /**
@@ -68,22 +78,22 @@ public class TDPlayerFour implements SliderPlayer {
         // Assigning Player Pieces
         String playerType = Character.toString(player);
         ourPlayer = playerType;
-        Opponent = playerType.equals(Tile.PLAYER_H) ? Tile.PLAYER_V : Tile.PLAYER_H;
+        opponent = playerType.equals(Tile.PLAYER_H) ? Tile.PLAYER_V : Tile.PLAYER_H;
 
         // Reading in the Board
-        curr_board = readBoard(dimension, board);
+        currentBoard = readBoard(dimension, board);
 
         // Saving Board size
-        boardsize = dimension;
+        boardSize = dimension;
 
         // Getting All Possible Moves
-        refresh(curr_board);
-        //saveBoard(curr_board);
+        refresh(currentBoard);
+        //saveBoard(currentBoard);
 
         incomplete = true;
 
         // Initialising the move counter to 0
-        movecount = 0.0;
+        moveCount = 0.0;
     }
 
 
@@ -97,92 +107,79 @@ public class TDPlayerFour implements SliderPlayer {
      * move at the beginning of the game, move = null.
      */
     public void update(Move move) {
-        modifyBoard(curr_board, move);
-        refresh(curr_board);
-        movecount += 1;
 
-        // Start TDLeaf if the game has ended!
-        //System.out.printf("After updating, H Tiles = %d, V tiles = %d\n", curr_board.getH_tiles().size(), curr_board.getV_tiles().size());
-        if (incomplete && (curr_board.getH_tiles().size() == 0 || curr_board.getV_tiles().size() == 0)) {
+        // Update the current board
+        modifyBoard(currentBoard, move);
+        refresh(currentBoard);
+        moveCount += 1;
+
+        // Start TDLeaf if the game has ended
+        if (incomplete && (currentBoard.getHTiles().size() == 0 || currentBoard.getVTiles().size() == 0)) {
             if (td) {
                 tdLeaf();
                 System.out.println(weights);
             }
             incomplete = false;
         }
-        if (debug) System.out.printf("Player Tiles = %d, Opponent Tiles = %d\n", playerTiles.size(), opponentTiles.size());
     }
+
 
     /**
-     * Request a decision from the player as to which move they would like to
-     * make next. Your player should consider its options and select the best
-     * move available at the time, according to whatever strategy you have
-     * developed.
-     *
-     * The move returned must be a legal move based on the current
-     * state of the game. If there are no legal moves, return null (pass).
-     *
-     * Before returning your move, you should also update your internal
-     * representation of the board to reflect the result of the move you are
-     * about to make.
-     *
-     * @return a Move object representing the move you would like to make
-     * at this point of the game, or null if there are no legal moves.
+     *  Decides which move to make (based on minimax decision)
+     * @return the move
      */
     public Move move() {
-        if (debug) System.out.printf("\nPLAYER: %s\nNEW MOVE:\nChoosing between moves: " + curr_board.getMovesPlayer() + "\n", ourPlayer);
-        if (curr_board.getMovesPlayer().isEmpty()) {
+        if (currentBoard.getMovesPlayer().isEmpty()) {
             return null;
         }
-        Move firstMove = minimaxDecision(curr_board);
+        Move firstMove = minimaxDecision(currentBoard);
         update(firstMove);
 
-        if (debug) System.out.println("\nFinal Move Choice: " + firstMove.toString() + "\n\n\n");
         return firstMove;
     }
-
-
-
 
     // ------------------------------
     //
     // TD LEAF(LAMBDA)
     //
-    // https://www.cs.princeton.edu/courses/archive/fall06/cos402/papers/chess-RL.pd
-    // http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.140.1523&rep=rep1&type=pdf
     // ------------------------------
 
+    /**
+     *  The TD leaf lambda algorithm
+     *  Called at the end of a game, updates weights in the weights file.
+     */
     public void tdLeaf() {
         // Initialise ArrayList of New Weights
-        ArrayList<Double> new_weights = new ArrayList<Double>();
+        ArrayList<Double> newWeights = new ArrayList<Double>();
 
         // Initialise Array of temporal Differences
-        ArrayList<Double> tempdifferences = new ArrayList<Double>();
+        ArrayList<Double> tempDifferences = new ArrayList<Double>();
         for (int i = 0; i < principalVariations.size() - 1; i++) {
-            tempdifferences.add(tempDiff(i));
+            tempDifferences.add(tempDiff(i));
         }
-        if (debug) System.out.printf("\nTemporal Differences: " + tempdifferences + "\n");
 
         // Calculate sumdiff arraylist for each weight, so it can be re-used for each weight (doesn't depend on weight)
-        ArrayList<Double> sumdiffs = new ArrayList<Double>();
+        ArrayList<Double> sumDiffs = new ArrayList<Double>();
         for (int t = 0; t < principalVariations.size() - 1; t++) {
-            sumdiffs.add(sumDiff(t, tempdifferences));
+            sumDiffs.add(sumDiff(t, tempDifferences));
         }
-        if (debug) System.out.println("Sumdiffs: " + sumdiffs);
 
         // For each weight i calculate the weight update
         for (int i = 0; i < weights.size(); i++) {
-            double weight_update = ALPHA*(updateVal(i, sumdiffs));
-            if (debug) System.out.printf("\nUpdate Weight %d: %f + %f\n", i + 1, weights.get(i), weight_update);
-            new_weights.add(weights.get(i) + weight_update);
+            double weightUpdate = ALPHA*(updateVal(i, sumDiffs));
+            newWeights.add(weights.get(i) + weightUpdate);
         }
-        System.out.println("Updating File to: " + new_weights);
-        if (makeupdates) Input.updateWeightFile(new_weights, WEIGHTS_FILE);
+        System.out.println("Updating File to: " + newWeights);
+        if (makeupdates) Input.updateWeightFile(newWeights, WEIGHTS_FILE);
     }
 
-
-    // Calculates the update value to be applied to the weight (after being modulated by alpha)
-    private double updateVal(int i, ArrayList<Double> sumdiffs) {
+    /**
+     *  Calculates the update value to be applied to a weight (after being modulated by alpha)
+     * @param i
+     * @param sumDiffs
+     * @return
+     */
+    private double updateVal(int i, ArrayList<Double> sumDiffs) {
         double sum = 0;
 
         // Each time t has a principal variation, which we consider
@@ -192,41 +189,45 @@ public class TDPlayerFour implements SliderPlayer {
             ArrayList<Double> features = principalVariations.get(t).getFeatures();
 
             // Get the feature so we can get the derivative
-            double feat_i = features.get(i) * SHRINK_FACTOR;
+            double featureI = features.get(i) * SHRINK_FACTOR;
 
             // Calculate the partial derivative of the eval function wrt weight i
-            double eval_1 = tanh((features.get(i) * (weights.get(i) + DELTA)) * SHRINK_FACTOR);
-            double eval_2 = tanh((features.get(i) * (weights.get(i))) * SHRINK_FACTOR);
-            double partial_derivative_2 = (eval_1 - eval_2) / DELTA;
+            double eval1 = tanh((features.get(i) * (weights.get(i) + DELTA)) * SHRINK_FACTOR);
+            double eval2 = tanh((features.get(i) * (weights.get(i))) * SHRINK_FACTOR);
+            double partialDerivative2 = (eval1 - eval2) / DELTA;
 
             // Multiply the partial derivative by the temporal difference sum
-            sum += partial_derivative_2 * sumdiffs.get(t);
+            sum += partialDerivative2 * sumDiffs.get(t);
         }
-        if (debug) System.out.printf("Sum %d: " + sum + "\n", i + 1);
         return sum;
     }
 
 
-    // Calculates the sum of the temporal differences, as modulated by LAMBDA
-    private double sumDiff(int t, ArrayList<Double> tempdifferences) {
-        double sum_diff = 0;
+    /**
+     * Calculates the sum of the temporal differences, as modulated by LAMBDA
+     * @param t
+     * @param tempDifferences
+     * @return
+     */
+    private double sumDiff(int t, ArrayList<Double> tempDifferences) {
+        double sumDiff = 0;
         for (int j = t; j < principalVariations.size() - 1; j++) {
+
             // Takes the minimum of the temporal difference and 0, so that increased temporal differences (the
             // opponent making a sub-optimal move, by our estimation) are not included in the training
-            sum_diff += pow(LAMBDA, j-t) * tempdifferences.get(j-t);
+            sumDiff += pow(LAMBDA, j-t) * tempDifferences.get(j-t);
         }
-        return sum_diff;
+        return sumDiff;
     }
 
-    // CHANGE:
-    // Modify to return 0 if the difference is positive? Positive differences arrive from opponent errors.
-    // Only do the above if the player being played against is potentially a bad player
-    // Temporal Difference of the leaf node of the principal variation at time t
+    /**
+     *  Returns the temporal difference
+     * @param t
+     * @return
+     */
     private double tempDiff(int t) {
-        //return min(principalVariations.get(t+1).getValue() - principalVariations.get(t).getValue(), 0.0);
         return principalVariations.get(t+1).getValue() - principalVariations.get(t).getValue();
     }
-
 
     // ------------------------------
     //
@@ -234,10 +235,17 @@ public class TDPlayerFour implements SliderPlayer {
     //
     // ------------------------------
 
+    /**
+     *  Returns the normalised evaluation function of a board
+     * @param board the board
+     * @param features features of the board
+     * @param weightarray feature weights
+     * @return normalised evaluation function
+     */
     public double evaluate(Board board, ArrayList<Double> features, ArrayList<Double> weightarray) {
 
         // The end state of the game should be properly evaluated by the evaluation function.
-        if (board.getPlayerTiles(Opponent).size() == 0) {
+        if (board.getPlayerTiles(opponent).size() == 0) {
             return -1;
         }
         if (board.getPlayerTiles(ourPlayer).size() == 0) {
@@ -254,16 +262,22 @@ public class TDPlayerFour implements SliderPlayer {
         return tanh(total*SHRINK_FACTOR);
     }
 
-
+    /**
+     * Find the features of a given board
+     * @param board the board
+     * @return an ArrayList of doubles representing the feature values
+     */
     public ArrayList<Double> evalFeatures(Board board) {
 
-        int boardLength = curr_board.getLength();
+        int boardLength = currentBoard.getLength();
 
+        // Arraylist of player and opponent tiles
         ArrayList<Tile> ourTiles = board.getPlayerTiles(ourPlayer);
-        ArrayList<Tile> theirTiles = board.getPlayerTiles(Opponent);
+        ArrayList<Tile> theirTiles = board.getPlayerTiles(opponent);
 
 
         // Feature 1
+        // the difference in the number of player and opponent tiles
         double playerTileDifference = ourTiles.size() - theirTiles.size();
 
 
@@ -272,34 +286,25 @@ public class TDPlayerFour implements SliderPlayer {
         double sumPlayerDistances = sumDistances(ourTiles,  board.getLength());
         double sumOpponentDistances = sumDistances(theirTiles, board.getLength());
 
-        //System.out.println("SumPlayerDistances "+ourPlayer+" is " + sumPlayerDistances+ " for the board: ");
-        //board.boardDisplay();
-
         // Feature 3
-        // Added Forward Moves -> Players were starting out by choosing the first possible move (moves.get(0))
         // Maximise possible forward moves for player, minimise for opponent
-        double forwardOpp = (forwardMoves(board.getMovesOpponent(), Opponent) / theirTiles.size()) * (boardsize - 1);
-        double forwardPla = (forwardMoves(board.getMovesPlayer(), ourPlayer) / ourTiles.size()) * (boardsize - 1);
+        // A heuristic ratio for number of forward moves each player can make (see comments.txt for details)
+        double forwardOpp = (forwardMoves(board.getMovesOpponent(), opponent) / theirTiles.size()) * (boardSize - 1);
+        double forwardPla = (forwardMoves(board.getMovesPlayer(), ourPlayer) / ourTiles.size()) * (boardSize - 1);
         double forwardAdv = (Double.isNaN(forwardPla) ? 0.0 : forwardPla) - (Double.isNaN(forwardOpp) ? 0.0 : forwardOpp);
 
-        if (Double.isNaN(forwardAdv)) {
-            System.out.printf("\nGiven forwardOpp = %f, forwardPla = %f, forwardAdv is NaN\n", forwardOpp, forwardPla);
-        }
-        // Feature 4
-        // If H: Sum of, for each H tile, Number of V tiles with an x, y that are both lower than that tile?
-        // If V: Sum of, for each V tile, Number of V tiles with an x, y that are both lower than that tile?
 
-        // Features 5-19
+        // Features 4-18
         // Sum of total number of player and opponent tiles at each distance from the edge
 
-
-        // Initialise array of all 0s, where index position i is the number of player tiles which have a distance
-        // to the goal edge of i
-
+        // Initialise arrays of all 0s, where index position i is the number of player/opponent tiles which have
+        // a distance to the goal edge of i
         int[] playerTileDistanceTotals = new int[Board.MAX_SIZE];
+        int[] opponentTileDistanceTotals = new int[Board.MAX_SIZE];
 
         int distance;
 
+        // Iterate through player tiles
         for (int i = 0; i < ourTiles.size(); i++) {
 
             //determine distance from the edge
@@ -309,23 +314,21 @@ public class TDPlayerFour implements SliderPlayer {
             else {
                 distance = boardLength - (ourTiles.get(i).getY()) - 1;
             }
-
             //increase the counter for the number of player tiles at that distance
             playerTileDistanceTotals[distance] +=1;
         }
 
-        int[] opponentTileDistanceTotals = new int[Board.MAX_SIZE];
 
+        // iterate through opponent's tiles
         for (int i = 0; i < theirTiles.size(); i++) {
 
             //determine distance from the edge
-            if (Opponent.equals(Tile.PLAYER_H)) {
+            if (opponent.equals(Tile.PLAYER_H)) {
                 distance = boardLength - (theirTiles.get(i).getX()) - 1;
             }
             else {
                 distance = boardLength - (theirTiles.get(i).getY()) - 1;
             }
-
             //increase the counter for the number of opponent tiles at that distance
             opponentTileDistanceTotals[distance] += 1;
         }
@@ -334,10 +337,9 @@ public class TDPlayerFour implements SliderPlayer {
         // Add all features to an ArrayList
         ArrayList<Double> features = new ArrayList<Double>();
 
-        features.add(playerTileDifference);                        // -1.0
-        features.add(sumOpponentDistances - sumPlayerDistances);   //  1.0
-        features.add(forwardAdv);                                  // -0.5
-
+        features.add(playerTileDifference);
+        features.add(sumOpponentDistances - sumPlayerDistances);
+        features.add(forwardAdv);
 
         for (int i = 0; i < Board.MAX_SIZE; i++) {
             features.add((double)playerTileDistanceTotals[i]);
@@ -345,27 +347,15 @@ public class TDPlayerFour implements SliderPlayer {
 
         }
 
-        //features.add(sumPlayerDistances);                        // -1.0
-        //features.add(sumOpponentDistances);                      //  1.0
-        //features.add(forwardMovesPla);                           //  0.5
-        //features.add(forwardMovesOpp);                           // -0.5
-        //features.add(movecount);                                 //  1.0
-
-        // debug - print features
-        /*
-        String s = "";
-        for (int i = 0;i<features.size();i++) {
-            s+=features.get(i);
-            s+=" ";
-        }
-        System.out.println("Features: "+s);
-        board.boardDisplay();
-        */
-
-
         return features;
     }
 
+    /**
+     * Returns total number of forward (towards goal edge) moves for a player
+     * @param moves arraylist of moves for the player
+     * @param player the player
+     * @return the number of forward moves
+     */
     private double forwardMoves(ArrayList<Move> moves, String player) {
         if (moves.size() < 1) {
             return 0;
@@ -383,14 +373,19 @@ public class TDPlayerFour implements SliderPlayer {
         return total;
     }
 
-
+    /**
+     *  Sum the distances of a set of tiles (ie player or opponent tiles) to the respective goal edge
+     * @param tiles the player or opponent tiles. All tiles passed in must belong to only one player.
+     * @param boardSize size of the board
+     * @return sum of distances
+     */
     private double sumDistances(ArrayList<Tile> tiles, int boardSize) {
 
         if (tiles.size() <1) {
             return 0.0;
         }
 
-        // Set the player type (assume all tiles passed in are the same player)
+        // Set the player type (all tiles passed in are the same player)
         String player = tiles.get(0).getCellType();
         double total = 0.0;
         for (Tile tile : tiles) {
@@ -404,25 +399,27 @@ public class TDPlayerFour implements SliderPlayer {
         return total;
     }
 
+
     // ------------------------------
     //
     // MINIMAX
     //
     // ------------------------------
 
+    /**
+     *  Makes a minimax decision on the optimal move based on a board
+     * @param board the board
+     * @return the optimal move
+     */
     private Move minimaxDecision(Board board) {
         ArrayList<Move> moves = board.getMovesPlayer();
         if (moves.size() == 0) {
             return null;
         }
-        // debug  -> Cannot put inside an if-statement.
-        vals = new ArrayList<ArrayList<ArrayList<Double>>>();
-        for (int i = 0; i < MAX_DEPTH; i++) {vals.add(new ArrayList<ArrayList<Double>>());}
-        ArrayList<Double> myVals = new ArrayList<Double>();
-        // end debug
 
         double maxVal = Double.NEGATIVE_INFINITY;
         double beta = Double.POSITIVE_INFINITY;
+
         Move maxMove = moves.get(0);
         PrincipalVariation variation = null;
         PrincipalVariation potentialVariation = null;
@@ -431,14 +428,6 @@ public class TDPlayerFour implements SliderPlayer {
             modifyBoard(newBoard, move);
             potentialVariation = minValue(newBoard,1, maxVal, beta);
             double val = potentialVariation.getValue();
-            //debug
-            if (debug) {
-                System.out.println(move.toString() + " = val: " + val + " Features: " + potentialVariation.getFeatures());
-                System.out.println("Potential Board: ");
-                potentialVariation.getBoard().boardDisplay();
-                myVals.add(potentialVariation.getValue());
-            }
-            // end debug
 
             if (val > maxVal) {
                 maxVal = val;
@@ -446,31 +435,22 @@ public class TDPlayerFour implements SliderPlayer {
                 variation = potentialVariation;
 
             }
-            /*
-            ArrayList<Double> features = evalFeatures(newBoard);
-            for (int i=0; i<weights.size();i++) {
-                System.out.println("Feature: " + i + " == " + features.get(i) + "; Weight == " + weights.get(i));
-            }
-            */
         }
         // With the 'True Utility' propagated from the leaf node, update our weights using tdLeaf
         if (td) {
             principalVariations.add(variation);
         }
-        //debug
-
-        if (debug) {
-            vals.get(0).add(myVals);
-            /*
-            System.out.println("TDPlayer " + ourPlayer + " max: " + maxVal + " from the following minimax tree:");
-
-            for (int i = 0; i < vals.size(); i++) {
-                System.out.println("depth " + i + " : " + vals.get(i));}*/
-        }
-        // end debug
         return maxMove;
     }
 
+    /**
+     *  Returns the max principal variation based on board and parameters (see comments.txt for details)
+     * @param board the board
+     * @param depth depth
+     * @param alpha alpha parameter (in td leaf)
+     * @param beta beta parameter (in td leaf)
+     * @return the max principal variation
+     */
     private PrincipalVariation maxValue(Board board, int depth, double alpha, double beta) {
 
         ArrayList<Move> moves = board.getMovesPlayer();
@@ -480,9 +460,6 @@ public class TDPlayerFour implements SliderPlayer {
             ArrayList<Double> features = evalFeatures(board);
             return new PrincipalVariation(board, features, evaluate(board, features, weights));
         }
-        //debug
-        ArrayList<Double> myVals = new ArrayList<Double>();
-        // end debug
 
         double value = Double.NEGATIVE_INFINITY;
         Board newBoard = null;
@@ -491,28 +468,25 @@ public class TDPlayerFour implements SliderPlayer {
             modifyBoard(newBoard, move);
             potentialVariation = minValue(newBoard, depth+1, alpha, beta);
             value = max(value, potentialVariation.getValue());
-            //debug
-            if (debug) {
-                myVals.add(value);
-                //System.out.printf(move.toString() + "Value: %f, Alpha: %f, Beta: %f\n", value, alpha, beta);
-            }
-            // end debug
+
             if (value >= beta) {
-                //if (debug) {
-                //    System.out.println("At Depth " + depth + " Decided " + move.toString() + " is optimal.");
-                //}
                 return potentialVariation;
             }
             alpha = max(alpha, value);
         }
 
-        //debug
-        if (debug) vals.get(depth).add(myVals);
-        // end debug
         return potentialVariation;
     }
 
 
+    /**
+     *  Returns the min principal variation based on board and parameters (see comments.txt for details)
+     * @param board the board
+     * @param depth depth
+     * @param alpha alpha parameter (in td leaf)
+     * @param beta beta parameter (in td leaf)
+     * @return the min principal variation
+     */
 
     private PrincipalVariation minValue(Board board, int depth, double alpha, double beta) {
 
@@ -524,10 +498,6 @@ public class TDPlayerFour implements SliderPlayer {
             return new PrincipalVariation(board, features, evaluate(board,features, weights));
         }
 
-        //debug
-        ArrayList<Double> myVals = new ArrayList<Double>();
-        // end debug
-
 
         double value = Double.POSITIVE_INFINITY;
         Board newBoard = null;
@@ -536,25 +506,21 @@ public class TDPlayerFour implements SliderPlayer {
             modifyBoard(newBoard, move);
             potentialVariation = maxValue(newBoard, depth+1, alpha, beta);
             value = min(value, potentialVariation.getValue());
-            //debug
-            if (debug) myVals.add(value);
-            // end debug
+
             if (value <= alpha) {
                 return potentialVariation;
             }
             beta = min(beta, value);
         }
 
-        //debug
-        if (debug) {
-            vals.get(depth).add(myVals);
-        }
-        // end debug
-
         return potentialVariation;
     }
 
-
+    /**
+     * Test whether the node is a terminal node (ie beyond max depth)
+     * @param depth the depth
+     * @return true or false (whether we have reached terminal state or not)
+     */
     private boolean terminalTest(int depth) {
         if (depth >= MAX_DEPTH) {
             return true;
@@ -562,6 +528,12 @@ public class TDPlayerFour implements SliderPlayer {
         return false;
     }
 
+    /**
+     *  Modifies a board with a given move
+     * @param board the board
+     * @param move the move
+     * @return the modified board
+     */
     private Board modifyBoard(Board board, Move move) {
 
         if (move == null) {
@@ -589,14 +561,14 @@ public class TDPlayerFour implements SliderPlayer {
         if (move.d == Move.Direction.DOWN) {
             toY -= 1;
         }
+
+        // update the board
         updateTileArray(board, move);
         board.updateTile(toX, toY, cellType);
         board.updateTile(fromX, fromY, Tile.EMPTY);
-
         refresh(board);
 
         return board;
-
     }
 
     // ------------------------------
@@ -607,10 +579,11 @@ public class TDPlayerFour implements SliderPlayer {
 
     /**
      * Refreshes variables about the board given its state and given which turn has been played
+     * @param board the board
      */
     private void refresh(Board board) {
         board.setMovesPlayer(board.getAllMoves(ourPlayer));
-        board.setMovesOpponent(board.getAllMoves(Opponent));
+        board.setMovesOpponent(board.getAllMoves(opponent));
 
         // Set list of tiles based on who the player is
         if (ourPlayer.equals(Tile.PLAYER_H)) {
@@ -631,6 +604,7 @@ public class TDPlayerFour implements SliderPlayer {
     /**
      * Updates the recorded array of tiles of a board, given the new move
      * @param newMove A move object, played either by the player or by the opponent.
+     * @param board the board
      */
 
     private void updateTileArray(Board board, Move newMove) {
@@ -657,7 +631,7 @@ public class TDPlayerFour implements SliderPlayer {
         // Use these to find New tile
         Tile newtile = new Tile(tileType, newRow, newCol, board.getLength());
 
-        // If h, remove old tile from h_tiles and add new tile to h_tiles
+        // If h, remove old tile from hTiles and add new tile to hTiles
         if (tileType.equals(Tile.PLAYER_H)) {
             board.removeHTile(board.getTile(oldX, oldY));
             if (validPos(newX, newY, board)) {
@@ -679,139 +653,59 @@ public class TDPlayerFour implements SliderPlayer {
     //
     // ------------------------------
 
-    /* Getter Method for Board */
+    /**
+     *
+     * @return the current board
+     */
     public Board getBoard() {
-        return curr_board;
+        return currentBoard;
     }
 
+    /**
+     *
+     * @return the weights
+     */
     public ArrayList<Double> getWeights() {
         return weights;
     }
 
-    /* Getter Method for ourPlayer */
+    /**
+     *
+     * @return the player as a string
+     */
     public String getOurPlayer() {
         return ourPlayer;
     }
 
-    /* Getter Method for Opponent */
+    /**
+     *
+     * @return the opponent as a string
+     */
     public String getOpponent() {
-        return Opponent;
+        return opponent;
     }
 
 
     /**
      *  Returns true iff the given position of the given board is free
-     * @param x
-     * @param y
-     * @param board
-     * @return
+     * @param x x position
+     * @param y y position
+     * @param board the board
+     * @return freeness of position
      */
     private Boolean validPos(int x, int y, Board board) {
-        boardsize = board.getLength();
-        if (x < boardsize && x >= 0 && boardsize-y-1 < boardsize && boardsize-y-1 >= 0) {
+        boardSize = board.getLength();
+        if (x < boardSize && x >= 0 && boardSize-y-1 < boardSize && boardSize-y-1 >= 0) {
             return true;
         }
         return false;
     }
 
+    /**
+     *
+     * @return the move count of the current board
+     */
     public double getMoveCount() {
-        return movecount;
+        return moveCount;
     }
-
-    /*
-    private void saveBoard(Board board){
-        positions.add(board);
-    }
-    */
-
-    /*
-    public void tdLeaf(ArrayList<Board> positions, double leafUtility) {
-        for (int i = movecount; i < positions.size(); i++) {
-            updateWeights(positions.get(i), leafUtility, i);
-        }
-        System.out.println("Weights: " + weights);
-    }
-
-    private void updateWeights(Board position, double trueUtil, int j) {
-        double util = evaluateBoard(position);
-        ArrayList<Double> board_features = evalFeatures(position);
-        int iterations = MAX_ITERATIONS;
-        while (abs(util - trueUtil) > EPS && iterations > 0) {
-            for (int i = 0; i < weights.size(); i++) {
-
-                //double new_weight = weights.get(i) - ALPHA*(pow(util - trueUtil, j))*board_features.get(i);
-                //double new_weight = weights.get(i) - j*ALPHA*(util - trueUtil)*board_features.get(i);
-                double new_weight = weights.get(i) - ALPHA*(util - trueUtil)*board_features.get(i);
-                weights.set(i, new_weight);
-                util = evaluateBoard(position);
-            }
-            //System.out.println("Iteration: " + (iterations));
-            iterations -= 1;
-        }
-    }
-    */
-
-
-
-
-    /*
-    private double evaluateBoard(Board board) {
-        ArrayList<Double> features = evalFeatures(board);
-
-        // The end state of the game should be properly evaluated by the evaluation function.
-        if (opponentTiles.size() == 0) {
-            return -1;
-        }
-        if (playerTiles.size() == 0) {
-            return 1;
-        }
-
-        // Sum total based on feature weights
-        double total = 0;
-        for (int i=0; i<weights.size();i++) {
-            //System.out.println("Feature: " + i + " == " + features.get(i) + "; Weight == " + weights.get(i));
-            total += weights.get(i) * features.get(i);
-        }
-        // Squashes Evaluation function to between -1 and 1, and the shrink factor allows for the high feature weights.
-        return tanh(total*SHRINK_FACTOR);
-    }
-    */
-
-
-
-
-
-
-    /*
-    private void updatePrevMinStates(Board newBoard, double value) {
-        if (!previous_min_states.containsKey(newBoard)) {
-            previous_min_states.put(newBoard, value);
-        }
-    }
-    private void updatePrevMaxStates(Board newBoard, double value) {
-        if (!previous_max_states.containsKey(newBoard)) {
-            previous_max_states.put(newBoard, value);
-        }
-    }*/
-
-
-        /* Getter Method for legalMoveCountPlayer */
-    //public ArrayList<Move> getMovesPlayer() { return movesPlayer; }
-
-    /* Getter Method for legalMoveCountPlayer */
-    //public ArrayList<Move> getMovesOpponent() {
-    //    return movesOpponent;
-    //}
-
-    /*
-    public ArrayList<Move> getMoves(String player) {
-
-        if (player.equals(Tile.PLAYER_H)) {
-            return hMoves;
-        }
-
-    }
-    */
-
-
 }
