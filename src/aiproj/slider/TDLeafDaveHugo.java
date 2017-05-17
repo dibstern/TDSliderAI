@@ -2,18 +2,13 @@ package aiproj.slider;
 
 import java.lang.Character;
 import java.util.ArrayList;
-import java.util.Arrays;
 
 import static aiproj.slider.Input.*;
-import aiproj.slider.PrincipalVariation;
+import static aiproj.slider.Referee.*;
 import static java.lang.Math.max;
 import static java.lang.Math.min;
 import static java.lang.Math.tanh;
-import static java.lang.Math.abs;
 import static java.lang.Math.pow;
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.util.List;
 
 /**
  * A player for the game "Slider"
@@ -28,23 +23,23 @@ import java.util.List;
  *   http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.140.1523&rep=rep1&type=pdf
  *
  */
-public class TDPlayerFour implements SliderPlayer {
+public class TDLeafDaveHugo implements SliderPlayer {
 
     // Keeping Track of information about the current board
     private Board currentBoard;
     private int boardSize;
     private String ourPlayer;
     private String opponent;
+    private double max_time_per_move = 200000000.00;
     private ArrayList<Tile> playerTiles = new ArrayList<Tile>();
     private ArrayList<Tile> opponentTiles = new ArrayList<Tile>();
-    private double moveCount;
 
     // Information about weights (for the evaluation function)
     private ArrayList<Double> weights;
-    private static final String WEIGHTS_FILE = "weights_four.txt";
+    private static final String WEIGHTS_FILE = "weights.txt";
 
     // Maximum search depth
-    private static final int MAX_DEPTH = 7;
+    //private int max_depth = 8;
 
     // Parameters for TDLeaf(Lambda)
     private static final double ALPHA = 1.0;
@@ -56,7 +51,9 @@ public class TDPlayerFour implements SliderPlayer {
     // Whether the game is complete or not
     private Boolean incomplete;
 
-    // For turning training on or off
+    // For turning training on or off. td=true but makeupdates=false allows you to observe the update that would have
+    // occurred, if makeupdates was set to true.
+    // Note that training only occurs when the Referee makes updates at the end of games.
     private static final Boolean td = true;
     private static final Boolean makeupdates = false;
 
@@ -88,12 +85,12 @@ public class TDPlayerFour implements SliderPlayer {
 
         // Getting All Possible Moves
         refresh(currentBoard);
-        //saveBoard(currentBoard);
 
+        // Noting that the game is currently incomplete (useful for TDLeaf(Lambda))
         incomplete = true;
 
-        // Initialising the move counter to 0
-        moveCount = 0.0;
+        // So IDS can appropriately ensure it meets time limits
+        if (boardSize > 5) max_time_per_move = 200000000.00;
     }
 
 
@@ -111,13 +108,12 @@ public class TDPlayerFour implements SliderPlayer {
         // Update the current board
         modifyBoard(currentBoard, move);
         refresh(currentBoard);
-        moveCount += 1;
 
         // Start TDLeaf if the game has ended
         if (incomplete && (currentBoard.getHTiles().size() == 0 || currentBoard.getVTiles().size() == 0)) {
             if (td) {
                 tdLeaf();
-                System.out.println(weights);
+                //System.out.println(weights);
             }
             incomplete = false;
         }
@@ -132,7 +128,15 @@ public class TDPlayerFour implements SliderPlayer {
         if (currentBoard.getMovesPlayer().isEmpty()) {
             return null;
         }
-        Move firstMove = minimaxDecision(currentBoard);
+        int depth = 6;
+        Move firstMove = null;
+        CPUTimer timer = new CPUTimer();
+        timer.start();
+        while (timer.clock() < max_time_per_move) {
+            firstMove = minimaxDecision(currentBoard, depth);
+            depth += 1;
+        }
+        //System.out.println("Max Depth = " + depth);
         update(firstMove);
 
         return firstMove;
@@ -145,8 +149,9 @@ public class TDPlayerFour implements SliderPlayer {
     // ------------------------------
 
     /**
-     *  The TD leaf lambda algorithm
+     *  The TD-Leaf(Lambda) algorithm.
      *  Called at the end of a game, updates weights in the weights file.
+     *  Requires Referee to be edited such that it updates the player at the end of the game.
      */
     public void tdLeaf() {
         // Initialise ArrayList of New Weights
@@ -175,9 +180,10 @@ public class TDPlayerFour implements SliderPlayer {
 
     /**
      *  Calculates the update value to be applied to a weight (after being modulated by alpha)
-     * @param i
-     * @param sumDiffs
-     * @return
+     *
+     * @param i The weight being updated.
+     * @param sumDiffs An array containing the sum of the temporal differences at each time t.
+     * @return A sum representing the value of the update for the given weight, according to TDLeaf(Lambda).
      */
     private double updateVal(int i, ArrayList<Double> sumDiffs) {
         double sum = 0;
@@ -205,25 +211,27 @@ public class TDPlayerFour implements SliderPlayer {
 
     /**
      * Calculates the sum of the temporal differences, as modulated by LAMBDA
-     * @param t
-     * @param tempDifferences
-     * @return
+     *
+     * @param t Time t, a point at which the evaluation function's error, as calculated by the temporal differences, is
+     *          calculated.
+     * @param tempDifferences The array of temporal differences between evaluation functions at the principal leaf node
+     *                        of the successive game states.
+     * @return A sum representing the sum of the temporal difference errors, as modulated by LAMBDA.
      */
     private double sumDiff(int t, ArrayList<Double> tempDifferences) {
         double sumDiff = 0;
         for (int j = t; j < principalVariations.size() - 1; j++) {
-
-            // Takes the minimum of the temporal difference and 0, so that increased temporal differences (the
-            // opponent making a sub-optimal move, by our estimation) are not included in the training
             sumDiff += pow(LAMBDA, j-t) * tempDifferences.get(j-t);
         }
         return sumDiff;
     }
 
     /**
-     *  Returns the temporal difference
-     * @param t
-     * @return
+     * Returns the temporal difference for a given time t. Didn't apply minimum of the temporal difference and 0.0,
+     * which performed poorly in practice.
+     *
+     * @param t Time t
+     * @return Temporal difference between the evaluations of the principal leaf nodes in two successive game states.
      */
     private double tempDiff(int t) {
         return principalVariations.get(t+1).getValue() - principalVariations.get(t).getValue();
@@ -236,7 +244,8 @@ public class TDPlayerFour implements SliderPlayer {
     // ------------------------------
 
     /**
-     *  Returns the normalised evaluation function of a board
+     * Returns the normalised evaluation function of a board
+     *
      * @param board the board
      * @param features features of the board
      * @param weightarray feature weights
@@ -307,7 +316,7 @@ public class TDPlayerFour implements SliderPlayer {
         // Iterate through player tiles
         for (int i = 0; i < ourTiles.size(); i++) {
 
-            //determine distance from the edge
+            // Determine distance from the edge
             if (ourPlayer.equals(Tile.PLAYER_H)) {
                 distance = boardLength - (ourTiles.get(i).getX()) - 1;
             }
@@ -319,17 +328,17 @@ public class TDPlayerFour implements SliderPlayer {
         }
 
 
-        // iterate through opponent's tiles
+        // Iterate through opponent's tiles
         for (int i = 0; i < theirTiles.size(); i++) {
 
-            //determine distance from the edge
+            // Determine distance from the edge
             if (opponent.equals(Tile.PLAYER_H)) {
                 distance = boardLength - (theirTiles.get(i).getX()) - 1;
             }
             else {
                 distance = boardLength - (theirTiles.get(i).getY()) - 1;
             }
-            //increase the counter for the number of opponent tiles at that distance
+            // Increase the counter for the number of opponent tiles at that distance
             opponentTileDistanceTotals[distance] += 1;
         }
 
@@ -344,7 +353,6 @@ public class TDPlayerFour implements SliderPlayer {
         for (int i = 0; i < Board.MAX_SIZE; i++) {
             features.add((double)playerTileDistanceTotals[i]);
             features.add((double)opponentTileDistanceTotals[i]);
-
         }
 
         return features;
@@ -381,7 +389,7 @@ public class TDPlayerFour implements SliderPlayer {
      */
     private double sumDistances(ArrayList<Tile> tiles, int boardSize) {
 
-        if (tiles.size() <1) {
+        if (tiles.size() < 1) {
             return 0.0;
         }
 
@@ -411,7 +419,7 @@ public class TDPlayerFour implements SliderPlayer {
      * @param board the board
      * @return the optimal move
      */
-    private Move minimaxDecision(Board board) {
+    private Move minimaxDecision(Board board, int max_depth) {
         ArrayList<Move> moves = board.getMovesPlayer();
         if (moves.size() == 0) {
             return null;
@@ -426,7 +434,7 @@ public class TDPlayerFour implements SliderPlayer {
         for (Move move : moves) {
             Board newBoard = board.copyBoard();
             modifyBoard(newBoard, move);
-            potentialVariation = minValue(newBoard,1, maxVal, beta);
+            potentialVariation = minValue(newBoard,1, maxVal, beta, max_depth);
             double val = potentialVariation.getValue();
 
             if (val > maxVal) {
@@ -444,19 +452,22 @@ public class TDPlayerFour implements SliderPlayer {
     }
 
     /**
-     *  Returns the max principal variation based on board and parameters (see comments.txt for details)
+     *  Returns the principal variation with the maximum evaluation value based on board and parameters
+     *  (see comments.txt for details)
+     *
      * @param board the board
      * @param depth depth
      * @param alpha alpha parameter (in td leaf)
      * @param beta beta parameter (in td leaf)
      * @return the max principal variation
      */
-    private PrincipalVariation maxValue(Board board, int depth, double alpha, double beta) {
+    private PrincipalVariation maxValue(Board board, int depth, double alpha, double beta, int max_depth) {
 
         ArrayList<Move> moves = board.getMovesPlayer();
         PrincipalVariation potentialVariation = null;
 
-        if (terminalTest(depth) || moves.size() == 0) {
+        if (terminalTest(depth, max_depth) || board.getPlayerTiles(ourPlayer).size() == 0 ||
+                board.getPlayerTiles(opponent).size() == 0 || moves.size() == 0) {
             ArrayList<Double> features = evalFeatures(board);
             return new PrincipalVariation(board, features, evaluate(board, features, weights));
         }
@@ -466,7 +477,7 @@ public class TDPlayerFour implements SliderPlayer {
         for (Move move : moves) {
             newBoard = board.copyBoard();
             modifyBoard(newBoard, move);
-            potentialVariation = minValue(newBoard, depth+1, alpha, beta);
+            potentialVariation = minValue(newBoard, depth+1, alpha, beta, max_depth);
             value = max(value, potentialVariation.getValue());
 
             if (value >= beta) {
@@ -474,13 +485,14 @@ public class TDPlayerFour implements SliderPlayer {
             }
             alpha = max(alpha, value);
         }
-
         return potentialVariation;
     }
 
 
     /**
-     *  Returns the min principal variation based on board and parameters (see comments.txt for details)
+     *  Returns the principal variation with the minimum evaluation value based on board and parameters
+     *  (see comments.txt for details)
+     *
      * @param board the board
      * @param depth depth
      * @param alpha alpha parameter (in td leaf)
@@ -488,12 +500,13 @@ public class TDPlayerFour implements SliderPlayer {
      * @return the min principal variation
      */
 
-    private PrincipalVariation minValue(Board board, int depth, double alpha, double beta) {
+    private PrincipalVariation minValue(Board board, int depth, double alpha, double beta, int max_depth) {
 
         ArrayList<Move> moves = board.getMovesOpponent();
         PrincipalVariation potentialVariation = null;
 
-        if (terminalTest(depth) || moves.size() == 0) {
+        if (terminalTest(depth, max_depth) || board.getPlayerTiles(ourPlayer).size() == 0 ||
+                board.getPlayerTiles(opponent).size() == 0 || moves.size() == 0) {
             ArrayList<Double> features = evalFeatures(board);
             return new PrincipalVariation(board, features, evaluate(board,features, weights));
         }
@@ -504,7 +517,7 @@ public class TDPlayerFour implements SliderPlayer {
         for (Move move : moves) {
             newBoard = board.copyBoard();
             modifyBoard(newBoard, move);
-            potentialVariation = maxValue(newBoard, depth+1, alpha, beta);
+            potentialVariation = maxValue(newBoard, depth+1, alpha, beta, max_depth);
             value = min(value, potentialVariation.getValue());
 
             if (value <= alpha) {
@@ -512,7 +525,6 @@ public class TDPlayerFour implements SliderPlayer {
             }
             beta = min(beta, value);
         }
-
         return potentialVariation;
     }
 
@@ -521,8 +533,8 @@ public class TDPlayerFour implements SliderPlayer {
      * @param depth the depth
      * @return true or false (whether we have reached terminal state or not)
      */
-    private boolean terminalTest(int depth) {
-        if (depth >= MAX_DEPTH) {
+    private boolean terminalTest(int depth, int max_depth) {
+        if (depth >= max_depth) {
             return true;
         }
         return false;
@@ -606,7 +618,6 @@ public class TDPlayerFour implements SliderPlayer {
      * @param newMove A move object, played either by the player or by the opponent.
      * @param board the board
      */
-
     private void updateTileArray(Board board, Move newMove) {
         // Find new X and Y
         int oldX = newMove.i;
@@ -701,11 +712,4 @@ public class TDPlayerFour implements SliderPlayer {
         return false;
     }
 
-    /**
-     *
-     * @return the move count of the current board
-     */
-    public double getMoveCount() {
-        return moveCount;
-    }
 }

@@ -27,10 +27,10 @@ public class Board {
     // 2D Array representing the board
     private Tile[][] tiles;
     private int length;
-    private ArrayList<Tile> hTiles = new ArrayList();
-    private ArrayList<Tile> vTiles = new ArrayList();
-    private ArrayList<Move> movesPlayer = new ArrayList();
-    private ArrayList<Move> movesOpponent = new ArrayList();
+    private ArrayList<Tile> hTiles = new ArrayList<Tile>();
+    private ArrayList<Tile> vTiles = new ArrayList<Tile>();
+    private ArrayList<Move> movesPlayer = new ArrayList<Move>();
+    private ArrayList<Move> movesOpponent = new ArrayList<Move>();
 
     public static final Integer MAX_SIZE = 7;
 
@@ -318,6 +318,5 @@ public class Board {
         }
         return vTiles;
     }
-
 }
 
