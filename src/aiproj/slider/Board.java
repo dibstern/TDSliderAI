@@ -13,23 +13,29 @@ package aiproj.slider;
 
 import java.util.ArrayList;
 import java.util.function.Predicate;
-
+/**
+ * Board class for a player for the game "Slider"
+ * For Artificial Intelligence at the University of Melbourne
+ * by David Stern (dstern 585870) and Hugh Edwards (hughe 584183)
+ * 2017-03-26
+ *
+ * See comments.txt for details
+ *
+ */
 public class Board {
 
     // 2D Array representing the board
     private Tile[][] tiles;
     private int length;
-    private ArrayList<Tile> h_tiles = new ArrayList();
-    private ArrayList<Tile> v_tiles = new ArrayList();
+    private ArrayList<Tile> hTiles = new ArrayList();
+    private ArrayList<Tile> vTiles = new ArrayList();
     private ArrayList<Move> movesPlayer = new ArrayList();
     private ArrayList<Move> movesOpponent = new ArrayList();
 
     public static final Integer MAX_SIZE = 7;
 
-
-
     /**
-     * Constructor for board.
+     * Constructor for an empty board
      * @param N the length ai width of the board in tiles
      */
     public Board(int N) {
@@ -37,6 +43,23 @@ public class Board {
         length = N;
     }
 
+    /**
+     * Constructor for a filled board
+     * @param tiles the tiles
+     * @param hTiles player h tiles
+     * @param vTiles player v tiles
+     */
+    public Board(Tile[][] tiles, ArrayList<Tile> hTiles, ArrayList<Tile> vTiles) {
+        this.tiles = tiles;
+        this.hTiles = hTiles;
+        this.vTiles = vTiles;
+        this.length = tiles.length;
+    }
+
+    /**
+     *  Creates a deep copy of a board
+     * @return the new board
+     */
     public Board copyBoard() {
 
         Tile[][] newTiles = new Tile[length][length];
@@ -51,36 +74,35 @@ public class Board {
         }
 
         // create list of h and v tiles
-        ArrayList<Tile> new_h_tiles = new ArrayList<Tile>();
-        ArrayList<Tile> new_v_tiles = new ArrayList<Tile>();
+        ArrayList<Tile> new_hTiles = new ArrayList<Tile>();
+        ArrayList<Tile> new_vTiles = new ArrayList<Tile>();
 
-        for (Tile tile : h_tiles) {
-            new_h_tiles.add(tile);
+        for (Tile tile : hTiles) {
+            new_hTiles.add(tile);
         }
-        for (Tile tile : v_tiles) {
-            new_v_tiles.add(tile);
+        for (Tile tile : vTiles) {
+            new_vTiles.add(tile);
         }
 
-        // make the board
-        return new Board(newTiles, new_h_tiles, new_v_tiles);
+        // make and return the board
+        return new Board(newTiles, new_hTiles, new_vTiles);
     }
 
-    public Board(Tile[][] tiles, ArrayList<Tile> h_tiles, ArrayList<Tile> v_tiles) {
-        this.tiles = tiles;
-        this.h_tiles = h_tiles;
-        this.v_tiles = v_tiles;
-        this.length = tiles.length;
-    }
 
+    /**
+     *  Returns all available moves for the given player cell_type
+     * @param cell_type the player's cell type
+     * @return an ArrayList of legal moves
+     */
     public ArrayList<Move> getAllMoves(String cell_type) {
         ArrayList<Move> moves = new ArrayList<Move>();
         ArrayList<Tile> playerTiles;
 
         if (cell_type.equals(Tile.PLAYER_H)) {
-            playerTiles = h_tiles;
+            playerTiles = hTiles;
         }
         else if (cell_type.equals(Tile.PLAYER_V)) {
-            playerTiles = v_tiles;
+            playerTiles = vTiles;
         }
         else {
             System.out.println("ERROR: Incorrect Tile Type");
@@ -94,6 +116,11 @@ public class Board {
         return moves;
     }
 
+    /**
+     *  Returns the available moves for a tile
+     * @param theTile the tile
+     * @return an arraylist of moves for that tile
+     */
     private ArrayList<Move> getTileMoves(Tile theTile) {
         ArrayList<Move> moves = new ArrayList<Move>();
 
@@ -125,67 +152,112 @@ public class Board {
         return moves;
     }
 
-    /* Gets the board's tiles */
+    /**
+     *
+     * @return the board's tiles
+     */
     public Tile[][] getTiles() {
         return tiles;
     }
 
-    /* Access Tile Using (x, y) coordinates */
+    /**
+     *  get a tile at position x, y
+     * @param x
+     * @param y
+     * @return the tile
+     */
     public Tile getTile(int x, int y) {
         return tiles[length-1-y][x];
     }
 
-    /* Gets the 2D array indices, given cartesian x,y coordinates */
+    /**
+     *  Gets the 2D array indices, given cartesian x,y coordinates
+     * @param givenX
+     * @param givenY
+     * @return the 2d array infices
+     */
     public int[] getPos(int givenX, int givenY) {
         int[] pos = {(length - 1 - givenY), givenX};
         return pos;
     }
 
-    /* Mutate the Board State */
+
+
+    /**
+     *  Mutate a tile at x y to a new tile
+     * @param x x posiiton
+     * @param y y position
+     * @param newCellType the cell type to change to
+     */
     public void updateTile(int x, int y, String newCellType) {
         if (length-1-y < length && length-1-y >= 0 && x < length && x >= 0) {
             tiles[length-1-y][x].setCellType(newCellType);
         }
     }
 
-    /* Get the length of the board */
+    /**
+     *
+     * @return length of the board
+     */
     public int getLength() {
         return length;
     }
 
-    /* Get the array of Horizontal Tiles */
+    /**
+     *
+     * @return arraylist of horizontal tiles
+     */
     public ArrayList<Tile> getHTiles() {
-        return h_tiles;
+        return hTiles;
     }
 
-    /* Get the array of Vertical Tiles */
+
+    /**
+     *
+     * @return arraylist of vertical tiles
+     */
     public ArrayList<Tile> getVTiles() {
-        return v_tiles;
+        return vTiles;
     }
 
-    /* Mutate the array of Horizontal Tiles */
+
+    /**
+     *  Add a h tile to the arraylist
+     * @param newTile the tile
+     */
     public void addHTile(Tile newTile) {
-        h_tiles.add(newTile);
+        hTiles.add(newTile);
     }
 
-    /* Mutate the array of Vertical Tiles */
+    /**
+     *  Add a v tile to the arraylist
+     * @param newTile the tile
+     */
     public void addVTile(Tile newTile) {
-        v_tiles.add(newTile);
+        vTiles.add(newTile);
     }
 
-    /* Remove old tiles from the recorded v_tiles array */
+    /**
+     *  Remove old tile from the recorded vTiles array
+     * @param oldTile the old tile
+     */
     public void removeVTile(Tile oldTile) {
         Predicate<Tile> tilePredicate = t-> (t.getRow() == oldTile.getRow() && t.getCol() == oldTile.getCol());
-        v_tiles.removeIf(tilePredicate);
+        vTiles.removeIf(tilePredicate);
     }
 
-    /* Remove old tiles from the recorded h_tiles array */
+    /**
+     * Remove old tile from the recorded hTiles array
+     * @param oldTile the old tile
+     */
     public void removeHTile(Tile oldTile) {
         Predicate<Tile> tilePredicate = t-> (t.getRow() == oldTile.getRow() && t.getCol() == oldTile.getCol());
-        h_tiles.removeIf(tilePredicate);
+        hTiles.removeIf(tilePredicate);
     }
 
-    /* Prints the board */
+    /**
+     * Display the board (print it)
+     */
     public void boardDisplay() {
         String currBoard = "";
         for (int i = 0; i < length; i++) {
@@ -202,34 +274,49 @@ public class Board {
         System.out.println(currBoard);
     }
 
-
-    public ArrayList<Tile> getH_tiles() {
-        return h_tiles;
-    }
-
-    public ArrayList<Tile> getV_tiles() {
-        return v_tiles;
-    }
-
+    /**
+     * Set player moves
+     * @param moves the moves
+     */
     public void setMovesPlayer(ArrayList<Move> moves) {
         this.movesPlayer = moves;
     }
+
+    /**
+     * Set opponent's moves
+     * @param moves the moves
+     */
     public void setMovesOpponent(ArrayList<Move> moves) {
         this.movesOpponent = moves;
     }
 
+    /**
+     * Get the player's moves
+     * @return the player's moves
+     */
     public ArrayList<Move> getMovesPlayer() {
         return this.movesPlayer;
     }
+
+    /**
+     *
+     * @return the opponent's moves
+     */
     public ArrayList<Move> getMovesOpponent() {
         return this.movesOpponent;
     }
 
+    /**
+     * Get player tiles
+     * @param player the player
+     * @return the player's tiles (arraylist form)
+     */
+
     public ArrayList<Tile> getPlayerTiles(String player) {
         if (player.equals(Tile.PLAYER_H)) {
-            return h_tiles;
+            return hTiles;
         }
-        return v_tiles;
+        return vTiles;
     }
 
 }

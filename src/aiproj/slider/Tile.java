@@ -8,7 +8,15 @@
  * @since 2017-03-26
  */
 package aiproj.slider;
-
+/**
+ * Tile class for a player for the game "Slider"
+ * For Artificial Intelligence at the University of Melbourne
+ * by David Stern (dstern 585870) and Hugh Edwards (hughe 584183)
+ * 2017-03-26
+ *
+ * See comments.txt for details
+ *
+ */
 public class Tile {
 
     // Definitions of the supported cell types
@@ -47,16 +55,27 @@ public class Tile {
         this.y = y;
     }
 
+    /**
+     *  Copies a tile
+     * @return a copy of a tile
+     */
     public Tile copyTile() {
         Tile newTile = new Tile(cellType, row, col, x,y);
         return newTile;
     }
 
+    /**
+     *
+     * @return this cell type (String)
+     */
     public String getCellType() {
         return this.cellType;
     }
 
-    /* Returns whether the cell type is EMPTY */
+    /**
+     *  Returns whether the cell  is empty
+     * @return boolean, whether cell is empty or not
+     */
     public boolean isEmpty() {
         if (this.cellType.equals(EMPTY)) {
             return true;
@@ -64,7 +83,9 @@ public class Tile {
         return false;
     }
 
-    /* Getter Method that returns an integer array of (x, y) coordinates */
+    /**
+     * @return x, y coordinates as an array of the tile
+     */
     public int[] getCoord() {
         int[] coord = new int[2];
         coord[0] = this.x;
@@ -73,32 +94,42 @@ public class Tile {
     }
 
 
-    /*
-    public int getPos() {
-        int[] newPos = {row, col};
-        return newPos;
-    }*/
-
+    /**
+     *
+     * @return the row
+     */
     public int getRow() {
         return row;
     }
 
+    /**
+     *
+     * @return the column
+     */
     public int getCol() {
         return col; 
     }
 
+    /**
+     * set cell type
+     * @param type the type
+     */
     public void setCellType(String type) {
         this.cellType = type;
     }
 
-    public String getCellType(String type) {
-        return this.cellType;
-    }
-
+    /**
+     *
+     * @return x coordinate
+     */
     public int getX() {
         return x;
     }
 
+    /**
+     *
+     * @return y coordinate
+     */
     public int getY() {
         return y;
     }
