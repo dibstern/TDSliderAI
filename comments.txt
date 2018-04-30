@@ -6,7 +6,7 @@ by David Stern (dstern 585870) and Hugh Edwards (hughe 584183)
 
 Our approach
 
-    Our approach to playing Slider is to use Minimax with alpha-beta pruning, with an evaluation function trained with the TD Leaf(Lambda) algorithm (‘’).
+	Our approach to playing Slider is to use Minimax with alpha-beta pruning, with an evaluation function trained with the TD Leaf(Lambda) algorithm (Baxter, 1999).
 
 
     Minimax
@@ -60,7 +60,8 @@ Our approach
     Time Complexity:
         The time complexity for our algorithm is simply the average case of alpha-beta pruning, which is O(b^(3d/4)), and our evaluation function, which is O(n), as it looks through all of the tiles on the board. Given that, at each depth, our evaluation function calculated, and is O(n), our Time complexity is therefore O(nb^(3d/4)).
 
-
+    References:
+        Baxter, J., Tridgell, A., & Weaver, L. (1999). TDLeaf (lambda): Combining temporal difference learning with game-tree search. arXiv preprint cs/9901001.
 
 
 
