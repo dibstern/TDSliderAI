@@ -1,0 +1,67 @@
+Comments for Part B
+For Artificial Intelligence at the University of Melbourne 
+by David Stern (dstern 585870) and Hugh Edwards (hughe 584183)
+2017-03-26
+
+
+Our approach
+
+	Our approach to playing Slider is to use Minimax with alpha-beta pruning, with an evaluation function trained with the TD Leaf(Lambda) algorithm (Baxter, 1999).
+
+
+    Minimax
+
+        As outlined in the textbook (Artificial Intelligence: A Modern Approach by Russel & Norvig), Minimax recursively creates a search tree that considers every possible action and response sequence for a given game. It views each level of the search tree as a different player, who seeks to maximise their own utility, and minimise their opponents' utility. So, it searches for and selects the optimal move, assuming the opponent is also optimal.
+
+    Alpha Beta Pruning
+
+        Our minimax algorithm implements alpha-beta pruning, which effectively reduces the sections of the tree which must be examined, in order to increase the performance of the algorithm under the given time and space requirements.
+
+        This pruning works by ignoring certain parts of the tree which are 'irrelevant' - if the algorithm can see that, for example, a branch is already suboptimal compared to a branch it has looked at, then it can safely ignore that branch.
+
+
+    Evaluation Function
+
+        Our evaluation function combines a number of features with weights (normalised with the tanh function).
+
+        We have attempted to capture a rich variety of features about the board which capture its desirability.
+
+        Our features are:
+
+            1   The number of player tiles subtract opponents tiles. Desirable obviously because we want to have less tiles remaining than the opponent.
+            2   The total distances from player tiles to passing their goal edge, subtract the total distances for opponents tiles. Desirable because less distance to the edge (roughly) means less moves to win.
+            3   A measure of the proportion of forward moves available to our player, relative to the proportion of forward moves available to the opponent. Here, 'proportion' refers to the number of forward moves for a player, divided by number of tiles belonging to that player, then multiplied by the number of tiles that player initially has on the board at the start of the game. This last multiplier is used so that this measure is consistent across different board sizes.
+            4   Number of player tiles which are 0 tiles from the goal edge
+            5   Number of opponent tiles which are 0 tiles from the goal edge
+            5   Number of player tiles which are 1 tiles from the goal edge
+            6   Number of opponent tiles which are 1 tiles from the goal edge
+            7   Number of player tiles which are 2 tiles from the goal edge
+            8   Number of opponent tiles which are 2 tiles from the goal edge
+            9
+            .
+            .
+            17  Number of opponent tiles which are 6 tiles from the goal edge
+
+    TD-Leaf(Lambda)
+
+        The TD-Leaf(Lambda) algorithm is an algorithm designed by Baxter, Tridgell and Weaver in their paper ‘Experiments in Parameter Learning Using Temporal Differences’ (1998) that takes Temporal Difference Learning (introduced by Samuel in ‘Some studies in machine learning using the game of checkers’, 1959, extended and formalised by Sutton in ‘Learning to Predict by the Methods of Temporal Differences’, 1988) and applies it to Minimax. Temporal Difference Learning is a form of reinforcement learning that assigns credit by means of difference between temporally successive predictions. Sutton wrote “for most real-world prediction problems, temporal-difference methods require less memory and less peak computation than conventional methods, and they produce more accurate predictions”. TD-Leaf(Lambda) adapts Sutton’s TD(Lambda) algorithm for use in deep minimax search, which is particularly important in this game.
+
+        There is little literature or guides that explain how to implement this algorithm, other than Baxter, Tridgell and Weaver’s papers, some of which use notation that contains errors, and it wasn’t particularly well set out. Regardless, after much thought, trial and error, we were able to eventually implement a working version of TDLeaf(Lambda), and used it to train our AI to learn a reasonably effective set of weights for our features.
+
+        TDLeaf(Lambda)’s success does depend greatly on the opponents that it learns from, and the learning parameter and Lambda parameters that are set. As explained in Baxter, Tridgell and Weaver’s papers on applying TDLeaf(Lambda) to Chess in a program called ‘Knightcap’, it did not perform well in self-learning in comparison to how it performed when learning from online opponents of increasing ability. Unfortunately, such opponents were not available for our AI, and our learned weights may well have suffered in comparison to a player trained against the opponents against which it will actually be compared. However, we estimated that the average student would implement an AI using Minimax with Alpha Beta Pruning, and hence trained our player against that, and against itself (self-play).
+
+        We observed that the more trained our AI received, the better its performance (with diminishing returns).
+
+        Training can be turned on and off, and updates to the weights file can be turned on and off. tanh() was used to better represent utility, and because it provides a faster learning rate because of its steeper derivative (Yann LeCun, 1998, ‘Efficient BackProp’). We used a scaling factor so that our evaluation function would more appropriately be able to differentiate different sets of features. We used a high Lambda value, given that what matters are the states further down the line, the end of the game, rather than those at the start of the game; at least for early training, before our weights are ‘good’, as advised by Baxter, Tridgell and Weaver. We did not assume that positive temporal differences should be excluded from our calculations,  as Baxter, Tridgell and Weaver did in Knightcap, only because this performed worse during training.
+
+        Potential improvements could apply Iterative Deepening Search, an Opening or Closing Book, and potentially different features in the evaluation function.
+
+
+    Time Complexity:
+        The time complexity for our algorithm is simply the average case of alpha-beta pruning, which is O(b^(3d/4)), and our evaluation function, which is O(n), as it looks through all of the tiles on the board. Given that, at each depth, our evaluation function calculated, and is O(n), our Time complexity is therefore O(nb^(3d/4)).
+
+    References:
+        Baxter, J., Tridgell, A., & Weaver, L. (1999). TDLeaf (lambda): Combining temporal difference learning with game-tree search. arXiv preprint cs/9901001.
+
+
+

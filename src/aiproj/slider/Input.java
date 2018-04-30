@@ -9,11 +9,21 @@
  */
 package aiproj.slider;
 
-// CHANGE 1: Read in Piece Positions for H and V (Separate Arrays?)
-// CHANGE 2: String instead of System.in -> strInput into .getScanner(strInput).
 
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.util.ArrayList;
 import java.util.Scanner;
 
+/**
+ * Input class for a player for the game "Slider"
+ * For Artificial Intelligence at the University of Melbourne
+ * by David Stern (dstern 585870) and Hugh Edwards (hughe 584183)
+ * 2017-03-26
+ *
+ * See comments.txt for details
+ *
+ */
 
 public final class Input {
 
@@ -46,5 +56,64 @@ public final class Input {
             }
         }
         return board;
+    }
+
+    /**
+     * Reads in a weight file
+     * @param weights_file name of the weight file
+     * @return arraylist of weights
+     */
+    public static ArrayList<Double> readWeightFile(String weights_file) {
+
+        FileReader in = null;
+        String str = "";
+        ArrayList<Double> file_weights = new ArrayList<Double>();
+
+        try {
+            in = new FileReader(weights_file);
+            int chr;
+            while ((chr = in.read()) != -1) {
+                //System.out.println((char)c);
+                str = str + (char) chr;
+            }
+            String[] weightsString = str.split(" ");
+            for (int i = 0; i < weightsString.length; i++) {
+                file_weights.add(Double.parseDouble(weightsString[i]));
+            }
+            in.close();
+        }
+        catch ( Exception e) {
+            System.out.println("FILE READ FAIL");
+            System.exit(0);
+        }
+
+        return file_weights;
+    }
+
+    /**
+     *  Updates a weights file based on a set of new weights
+     * @param weights the new weights
+     * @param weights_file name of the weights file
+     */
+    public static void updateWeightFile(ArrayList<Double> weights, String weights_file) {
+
+        FileWriter out = null;
+        String str = "";
+
+        try {
+            out = new FileWriter(weights_file);
+
+            for (int i = 0; i < weights.size(); i++) {
+                str += Double.toString(weights.get(i));
+                str += " ";
+            }
+            out.write(str);
+            out.close();
+
+        }
+        catch ( Exception e) {
+            System.out.println("FILE READ FAIL");
+            System.exit(0);
+        }
     }
 }
