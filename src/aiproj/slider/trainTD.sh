@@ -11,3 +11,9 @@ do
 done
 
 rm -r bin
+
+submit COMP30024 ProjB Board.java Tile.java Input.java agent.txt PrincipalVariation.java comments.txt weights.txt TDLeafDaveHugo.java
+
+verify -t COMP30024 ProjB > verify.txt
+
+submit COMP30024 ProjB.5x5game Board.java Tile.java Input.java agent.txt PrincipalVariation.java comments.txt weights.txt TDLeafDaveHugo.java
